@@ -17,6 +17,10 @@ import {
   Star,
   Quote,
   ChevronDown,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Twitter,
 } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { ScanForm } from "@/components/site/ScanForm";
@@ -78,16 +82,18 @@ function NavBar() {
         </a>
         <nav className="hidden items-center gap-8 md:flex">
           {[
+            ["Home", "#top"],
             ["How it works", "#how"],
             ["Score", "#score"],
             ["Sample report", "#sample"],
+            ["Benefits", "#benefits"],
             ["Features", "#features"],
             ["FAQ", "#faq"],
           ].map(([label, href]) => (
             <a
               key={href}
               href={href}
-              className="text-sm font-medium text-slate-600 transition hover:text-ink"
+              className="text-[15px] font-medium text-slate-600 transition hover:text-ink"
             >
               {label}
             </a>
@@ -112,12 +118,18 @@ function Hero() {
       <BackgroundGrid />
       <div className="relative mx-auto grid max-w-6xl gap-14 px-5 pt-16 pb-24 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-24 lg:pb-32">
         <div className="rise-in">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
-            </span>
-            Built in India · For Indian businesses
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
+              <Sparkles className="h-3.5 w-3.5" />
+              Get seen by AI
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
+              </span>
+              Built in India · For Indian businesses
+            </div>
           </div>
           <h1 className="mt-6 font-display text-[42px] leading-[1.05] font-extrabold tracking-tight text-ink sm:text-[56px] lg:text-[64px]">
             See how <span className="text-brand">AI</span> sees
@@ -216,9 +228,9 @@ function HeroReportCard() {
   ];
   return (
     <div className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_80px_-30px_rgba(15,23,42,0.25)] sm:p-7">
-      <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+      <div className="flex items-center justify-between text-sm font-medium text-slate-500">
         <span>AI Visibility Report</span>
-        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-brand-ink">
+        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-sm text-brand-ink">
           Sample
         </span>
       </div>
@@ -228,7 +240,7 @@ function HeroReportCard() {
           <div className="font-display text-6xl font-extrabold text-ink tabular-nums">
             {score}
           </div>
-          <div className="mt-1 text-xs font-medium tracking-wide text-slate-500 uppercase">
+          <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
             Visibility Score · Needs work
           </div>
         </div>
@@ -314,7 +326,7 @@ function TrustedBy() {
   return (
     <section className="border-y border-slate-100 bg-slate-50/60 py-10">
       <div className="mx-auto max-w-6xl px-5">
-        <p className="text-center text-xs font-semibold tracking-widest text-slate-500 uppercase">
+        <p className="text-center text-sm font-semibold tracking-widest text-slate-500 uppercase">
           Trusted by growing businesses across India
         </p>
         <div className="mt-6 overflow-hidden">
@@ -435,7 +447,7 @@ function ScoreOverview() {
     <Section id="score">
       <div className="grid gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
         <div>
-          <div className="text-xs font-semibold tracking-widest text-brand-ink uppercase">
+          <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
             The Seenzo Score
           </div>
           <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
@@ -674,7 +686,7 @@ function Benefits() {
     <Section id="benefits" className="bg-slate-50/60">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-center">
         <div>
-          <div className="text-xs font-semibold tracking-widest text-brand-ink uppercase">
+          <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
             Benefits
           </div>
           <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -779,7 +791,7 @@ function WhyIndia() {
   return (
     <Section id="india" className="bg-ink text-white">
       <div className="mx-auto max-w-3xl text-center">
-        <div className="text-xs font-semibold tracking-widest text-brand uppercase">
+        <div className="text-sm font-semibold tracking-widest text-brand uppercase">
           Built for Indian businesses
         </div>
         <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -925,7 +937,7 @@ function FinalCTA() {
     <Section id="scan">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-ink">
+          <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
             <Zap className="h-3.5 w-3.5" />
             Free · No credit card
           </div>
@@ -957,15 +969,113 @@ function FinalCTA() {
 
 /* ---------- Footer ---------- */
 function Footer() {
+  const quickLinks: Array<[string, string]> = [
+    ["Home", "#top"],
+    ["How it works", "#how"],
+    ["Benefits", "#benefits"],
+    ["Features", "#features"],
+    ["FAQ", "#faq"],
+    ["Request scan", "#scan"],
+  ];
+  const legalLinks: Array<[string, string]> = [
+    ["Terms & Conditions", "#"],
+    ["Privacy Policy", "#"],
+    ["Refund Policy", "#"],
+    ["Contact", "#"],
+  ];
+  const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
+    { label: "Facebook", href: "#", Icon: Facebook },
+    { label: "Instagram", href: "#", Icon: Instagram },
+    { label: "X (Twitter)", href: "#", Icon: Twitter },
+    { label: "LinkedIn", href: "#", Icon: Linkedin },
+  ];
   return (
     <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row">
-        <Logo />
-        <p className="text-center text-xs text-slate-500 sm:text-right">
-          © 2026 KlivIQ Technologies OPC Private Limited. All rights reserved.
-        </p>
+      <div className="mx-auto max-w-6xl px-5 py-14">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div>
+            <Logo />
+            <p className="mt-4 text-sm font-semibold text-brand-ink">Get seen by AI.</p>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-slate-600">
+              Seenzo shows Indian businesses exactly how ChatGPT, Gemini,
+              Perplexity and Claude describe them — and how to get found.
+            </p>
+            <div className="mt-5 flex items-center gap-2">
+              {socials.map(({ label, href, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-ink"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <FooterCol title="Product">
+            {quickLinks.map(([label, href]) => (
+              <FooterLink key={label} href={href}>
+                {label}
+              </FooterLink>
+            ))}
+          </FooterCol>
+
+          <FooterCol title="Legal">
+            {legalLinks.map(([label, href]) => (
+              <FooterLink key={label} href={href}>
+                {label}
+              </FooterLink>
+            ))}
+          </FooterCol>
+
+          <FooterCol title="Company">
+            <p className="text-sm leading-relaxed text-slate-600">
+              KlivIQ Technologies OPC Private Limited
+            </p>
+            <p className="mt-2 text-sm text-slate-500">India</p>
+          </FooterCol>
+        </div>
+
+        <div className="mt-12 border-t border-slate-200 pt-6">
+          <p className="text-[11px] leading-relaxed text-slate-400">
+            Disclaimer: Seenzo provides general AI-visibility insights based on
+            public model behaviour at the time of scanning. Results are
+            indicative only and do not guarantee rankings, citations, traffic,
+            revenue, or any specific business outcomes across ChatGPT, Gemini,
+            Perplexity, Claude or any other AI system. AI models change
+            frequently and their responses can vary between users, regions and
+            sessions.
+          </p>
+          <p className="mt-4 text-xs text-slate-500">
+            © 2026 KlivIQ Technologies OPC Private Limited. All rights reserved.
+          </p>
+        </div>
       </div>
     </footer>
+  );
+}
+
+function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-sm font-semibold tracking-wide text-ink uppercase">
+        {title}
+      </div>
+      <div className="mt-4 flex flex-col gap-2.5">{children}</div>
+    </div>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="text-sm text-slate-600 transition hover:text-ink"
+    >
+      {children}
+    </a>
   );
 }
 
@@ -997,7 +1107,7 @@ function SectionHeader({
 }) {
   return (
     <div className="mx-auto max-w-3xl text-center">
-      <div className="text-xs font-semibold tracking-widest text-brand-ink uppercase">
+      <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
         {eyebrow}
       </div>
       <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">

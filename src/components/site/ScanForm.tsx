@@ -17,6 +17,9 @@ export function ScanForm({ compact = false, className }: Props) {
     reset,
   } = useForm<ScanFormValues>({
     resolver: zodResolver(scanSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    shouldFocusError: true,
     defaultValues: { name: "", business: "", email: "", phone: "", website: "" },
   });
 
@@ -57,8 +60,11 @@ export function ScanForm({ compact = false, className }: Props) {
     );
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[15px] text-ink placeholder:text-slate-400 outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
+  const baseInput =
+    "w-full rounded-xl border bg-white px-4 py-3 text-[15px] text-ink placeholder:text-slate-400 outline-none transition focus:ring-4";
+  const okInput = "border-slate-200 focus:border-brand focus:ring-brand/10";
+  const errInput = "border-red-400 focus:border-red-500 focus:ring-red-500/10";
+  const cls = (hasErr: boolean) => cn(baseInput, hasErr ? errInput : okInput);
 
   return (
     <form
@@ -70,34 +76,57 @@ export function ScanForm({ compact = false, className }: Props) {
       noValidate
     >
       <div className={cn("grid gap-4", compact ? "sm:grid-cols-2" : "sm:grid-cols-2")}>
-        <Field label="Your name" error={errors.name?.message}>
-          <input {...register("name")} placeholder="Ravi Kumar" className={inputClass} />
+        <Field label="Your name" required error={errors.name?.message}>
+          <input
+            {...register("name")}
+            placeholder="Ravi Kumar"
+            aria-invalid={!!errors.name}
+            aria-required="true"
+            autoComplete="name"
+            className={cls(!!errors.name)}
+          />
         </Field>
-        <Field label="Business name" error={errors.business?.message}>
-          <input {...register("business")} placeholder="Kumar Textiles" className={inputClass} />
+        <Field label="Business name" required error={errors.business?.message}>
+          <input
+            {...register("business")}
+            placeholder="Kumar Textiles"
+            aria-invalid={!!errors.business}
+            aria-required="true"
+            autoComplete="organization"
+            className={cls(!!errors.business)}
+          />
         </Field>
-        <Field label="Email" error={errors.email?.message}>
+        <Field label="Email" required error={errors.email?.message}>
           <input
             {...register("email")}
             type="email"
             placeholder="you@business.in"
-            className={inputClass}
+            aria-invalid={!!errors.email}
+            aria-required="true"
+            autoComplete="email"
+            className={cls(!!errors.email)}
           />
         </Field>
-        <Field label="Phone / WhatsApp" error={errors.phone?.message}>
+        <Field label="Phone / WhatsApp" required error={errors.phone?.message}>
           <input
             {...register("phone")}
             type="tel"
             placeholder="+91 98xxx xxxxx"
-            className={inputClass}
+            aria-invalid={!!errors.phone}
+            aria-required="true"
+            autoComplete="tel"
+            className={cls(!!errors.phone)}
           />
         </Field>
         <div className="sm:col-span-2">
-          <Field label="Website URL" error={errors.website?.message}>
+          <Field label="Website URL" required error={errors.website?.message}>
             <input
               {...register("website")}
               placeholder="yourbusiness.in"
-              className={inputClass}
+              aria-invalid={!!errors.website}
+              aria-required="true"
+              autoComplete="url"
+              className={cls(!!errors.website)}
             />
           </Field>
         </div>
@@ -124,6 +153,9 @@ export function ScanForm({ compact = false, className }: Props) {
       <p className="mt-3 text-center text-xs text-slate-500">
         No credit card. No contracts. Report delivered in minutes.
       </p>
+      <p className="mt-2 text-center text-[11px] text-slate-400">
+        Demo form — submissions are not stored yet.
+      </p>
     </form>
   );
 }
@@ -131,17 +163,26 @@ export function ScanForm({ compact = false, className }: Props) {
 function Field({
   label,
   error,
+  required,
   children,
 }: {
   label: string;
   error?: string;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] font-medium text-slate-700">{label}</span>
+      <span className="mb-1.5 block text-[13px] font-medium text-slate-700">
+        {label}
+        {required && <span className="ml-0.5 text-red-500">*</span>}
+      </span>
       {children}
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {error && (
+        <span role="alert" className="mt-1 block text-xs text-red-600">
+          {error}
+        </span>
+      )}
     </label>
   );
 }
