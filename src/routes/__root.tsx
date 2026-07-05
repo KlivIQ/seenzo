@@ -78,26 +78,50 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Seenzo — See how AI sees your business" },
+      { title: "Seenzo - Get Seen By AI" },
       {
         name: "description",
         content:
-          "Seenzo scans your website and shows exactly how ChatGPT, Gemini, Perplexity and Claude describe your business. Get your free AI Visibility Report — no contracts, built for Indian businesses.",
+          "Seenzo is India's AI Visibility platform. See exactly how ChatGPT, Gemini, Perplexity and Claude describe your business — and get a free AI Visibility Report with a prioritised fix list.",
       },
       { name: "author", content: "KlivIQ Technologies OPC Private Limited" },
-      { name: "theme-color", content: "#ffffff" },
-      { property: "og:title", content: "Seenzo — See how AI sees your business" },
+      { name: "publisher", content: "KlivIQ Technologies OPC Private Limited" },
+      { name: "theme-color", content: "#10B981" },
+      {
+        name: "keywords",
+        content:
+          "AI visibility, generative engine optimization, GEO, AEO, answer engine optimization, ChatGPT SEO, Gemini SEO, Perplexity SEO, Claude, AI search, LLM SEO, AI visibility report, India SEO, Indian businesses",
+      },
+      { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1" },
+      { name: "googlebot", content: "index, follow" },
+      { name: "format-detection", content: "telephone=no" },
+      { httpEquiv: "content-language", content: "en-IN" },
+
+      // Geo tags
+      { name: "geo.region", content: "IN" },
+      { name: "geo.country", content: "India" },
+      { name: "geo.placename", content: "India" },
+      { name: "ICBM", content: "20.5937, 78.9629" },
+
+      // Open Graph
+      { property: "og:site_name", content: "Seenzo" },
+      { property: "og:type", content: "website" },
+      { property: "og:locale", content: "en_IN" },
+      { property: "og:title", content: "Seenzo - Get Seen By AI" },
       {
         property: "og:description",
         content:
-          "Free AI Visibility Report for Indian businesses. Find out how AI engines describe you — and how to get found.",
+          "Free AI Visibility Report for Indian businesses. Find out how ChatGPT, Gemini, Perplexity and Claude describe you — and how to get found.",
       },
-      { property: "og:type", content: "website" },
+      { property: "og:url", content: "/" },
+
+      // Twitter / X
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Seenzo — Get found by AI" },
+      { name: "twitter:title", content: "Seenzo - Get Seen By AI" },
       {
         name: "twitter:description",
-        content: "Free AI Visibility Report for Indian businesses.",
+        content:
+          "See how ChatGPT, Gemini, Perplexity and Claude describe your business. Free AI Visibility Report for Indian businesses.",
       },
     ],
     links: [
@@ -106,12 +130,59 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/logo/seenzo-icon-light.svg", type: "image/svg+xml" },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "256x256" },
+      { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "canonical", href: "/" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" as const },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": "#organization",
+              name: "Seenzo",
+              legalName: "KlivIQ Technologies OPC Private Limited",
+              url: "/",
+              logo: "/logo/seenzo-full-light.svg",
+              foundingDate: "2025",
+              areaServed: "IN",
+              address: {
+                "@type": "PostalAddress",
+                addressCountry: "IN",
+              },
+            },
+            {
+              "@type": "WebSite",
+              "@id": "#website",
+              name: "Seenzo",
+              url: "/",
+              inLanguage: "en-IN",
+              publisher: { "@id": "#organization" },
+            },
+            {
+              "@type": "SoftwareApplication",
+              name: "Seenzo",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              description:
+                "AI Visibility platform that scans ChatGPT, Gemini, Perplexity and Claude to show how they describe your business.",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "INR",
+              },
+            },
+          ],
+        }),
       },
     ],
   }),
