@@ -1,6 +1,11 @@
-type Props = { className?: string; variant?: "full" | "icon"; withTagline?: boolean };
+type Props = {
+  className?: string;
+  variant?: "full" | "icon";
+  /** Override the sub-line rendered under the wordmark. Defaults to "by KlivIQ". Pass null to hide. */
+  subLine?: string | null;
+};
 
-export function Logo({ className, variant = "full", withTagline = false }: Props) {
+export function Logo({ className, variant = "full", subLine = "by KlivIQ" }: Props) {
   if (variant === "icon") {
     return (
       <svg viewBox="0 0 64 64" className={className} fill="none" aria-hidden>
@@ -26,15 +31,17 @@ export function Logo({ className, variant = "full", withTagline = false }: Props
             <line x1="46" y1="6" x2="45" y2="1" />
           </g>
         </svg>
-        <span className="font-display text-2xl font-extrabold tracking-tight text-ink leading-none">
-          seen<span className="text-brand">zo</span>
-        </span>
-      </div>
-      {withTagline && (
-        <div className="mt-1 pl-[42px] text-[11px] font-medium tracking-widest text-slate-500 uppercase">
-          by KlivIQ
+        <div className="flex flex-col leading-none">
+          <span className="font-display text-2xl font-extrabold tracking-tight text-ink">
+            seen<span className="text-brand">zo</span>
+          </span>
+          {subLine && (
+            <span className="mt-1 text-[10px] font-semibold tracking-[0.18em] text-slate-500 uppercase">
+              {subLine}
+            </span>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
