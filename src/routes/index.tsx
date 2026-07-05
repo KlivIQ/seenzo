@@ -17,6 +17,10 @@ import {
   Star,
   Quote,
   ChevronDown,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Twitter,
 } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { ScanForm } from "@/components/site/ScanForm";
@@ -78,16 +82,18 @@ function NavBar() {
         </a>
         <nav className="hidden items-center gap-8 md:flex">
           {[
+            ["Home", "#top"],
             ["How it works", "#how"],
             ["Score", "#score"],
             ["Sample report", "#sample"],
+            ["Benefits", "#benefits"],
             ["Features", "#features"],
             ["FAQ", "#faq"],
           ].map(([label, href]) => (
             <a
               key={href}
               href={href}
-              className="text-sm font-medium text-slate-600 transition hover:text-ink"
+              className="text-[15px] font-medium text-slate-600 transition hover:text-ink"
             >
               {label}
             </a>
@@ -112,12 +118,18 @@ function Hero() {
       <BackgroundGrid />
       <div className="relative mx-auto grid max-w-6xl gap-14 px-5 pt-16 pb-24 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-24 lg:pb-32">
         <div className="rise-in">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
-            </span>
-            Built in India · For Indian businesses
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
+              <Sparkles className="h-3.5 w-3.5" />
+              Get seen by AI
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-70" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
+              </span>
+              Built in India · For Indian businesses
+            </div>
           </div>
           <h1 className="mt-6 font-display text-[42px] leading-[1.05] font-extrabold tracking-tight text-ink sm:text-[56px] lg:text-[64px]">
             See how <span className="text-brand">AI</span> sees
@@ -216,9 +228,9 @@ function HeroReportCard() {
   ];
   return (
     <div className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_80px_-30px_rgba(15,23,42,0.25)] sm:p-7">
-      <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+      <div className="flex items-center justify-between text-sm font-medium text-slate-500">
         <span>AI Visibility Report</span>
-        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-brand-ink">
+        <span className="rounded-full bg-brand-soft px-2 py-0.5 text-sm text-brand-ink">
           Sample
         </span>
       </div>
@@ -228,7 +240,7 @@ function HeroReportCard() {
           <div className="font-display text-6xl font-extrabold text-ink tabular-nums">
             {score}
           </div>
-          <div className="mt-1 text-xs font-medium tracking-wide text-slate-500 uppercase">
+          <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
             Visibility Score · Needs work
           </div>
         </div>
@@ -314,7 +326,7 @@ function TrustedBy() {
   return (
     <section className="border-y border-slate-100 bg-slate-50/60 py-10">
       <div className="mx-auto max-w-6xl px-5">
-        <p className="text-center text-xs font-semibold tracking-widest text-slate-500 uppercase">
+        <p className="text-center text-sm font-semibold tracking-widest text-slate-500 uppercase">
           Trusted by growing businesses across India
         </p>
         <div className="mt-6 overflow-hidden">
@@ -435,7 +447,7 @@ function ScoreOverview() {
     <Section id="score">
       <div className="grid gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
         <div>
-          <div className="text-xs font-semibold tracking-widest text-brand-ink uppercase">
+          <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
             The Seenzo Score
           </div>
           <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
@@ -674,7 +686,7 @@ function Benefits() {
     <Section id="benefits" className="bg-slate-50/60">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-center">
         <div>
-          <div className="text-xs font-semibold tracking-widest text-brand-ink uppercase">
+          <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
             Benefits
           </div>
           <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -779,7 +791,7 @@ function WhyIndia() {
   return (
     <Section id="india" className="bg-ink text-white">
       <div className="mx-auto max-w-3xl text-center">
-        <div className="text-xs font-semibold tracking-widest text-brand uppercase">
+        <div className="text-sm font-semibold tracking-widest text-brand uppercase">
           Built for Indian businesses
         </div>
         <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -925,7 +937,7 @@ function FinalCTA() {
     <Section id="scan">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-xs font-semibold text-brand-ink">
+          <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
             <Zap className="h-3.5 w-3.5" />
             Free · No credit card
           </div>
@@ -997,7 +1009,7 @@ function SectionHeader({
 }) {
   return (
     <div className="mx-auto max-w-3xl text-center">
-      <div className="text-xs font-semibold tracking-widest text-brand-ink uppercase">
+      <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
         {eyebrow}
       </div>
       <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
