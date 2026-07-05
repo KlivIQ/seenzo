@@ -26,6 +26,14 @@
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; text-shadow: 0 0 0 rgba(16,185,129,0); }
+  50% { transform: scale(1.035); opacity: 0.92; text-shadow: 0 12px 60px rgba(16,185,129,0.25); }
+}
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
 
 @utility rise-in {
   animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -36,6 +44,14 @@
 }
 @utility marquee-track {
   animation: marquee 32s linear infinite;
+}
+@utility coming-soon-breathe {
+  animation: breathe 3.6s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+@utility coming-soon-pulse {
+  animation: soft-pulse 2.4s ease-in-out infinite;
 }
 
 /*
