@@ -41,23 +41,66 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <main className="min-h-screen bg-white font-sans text-ink antialiased">
-      <NavBar />
-      <Hero />
-      <TrustedBy />
-      <WhyItMatters />
-      <HowItWorks />
-      <ScoreOverview />
-      <SampleReport />
-      <Features />
-      <Benefits />
-      <Comparison />
-      <WhyIndia />
-      <Testimonials />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
-    </main>
+    <>
+      <main
+        aria-hidden
+        className="min-h-screen bg-white font-sans text-ink antialiased blur-sm select-none pointer-events-none"
+      >
+        <NavBar />
+        <Hero />
+        <TrustedBy />
+        <WhyItMatters />
+        <HowItWorks />
+        <ScoreOverview />
+        <SampleReport />
+        <Features />
+        <Benefits />
+        <Comparison />
+        <WhyIndia />
+        <Testimonials />
+        <FAQ />
+        <FinalCTA />
+        <Footer />
+      </main>
+      <ComingSoonOverlay />
+    </>
+  );
+}
+
+/* ---------- Coming soon overlay ---------- */
+function ComingSoonOverlay() {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Coming soon"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-white/55 backdrop-blur-md"
+    >
+      <div className="mx-6 max-w-2xl text-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-4 py-1.5 text-sm font-semibold text-brand-ink coming-soon-pulse">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-70" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
+          </span>
+          Seenzo · Get seen by AI
+        </div>
+        <h2 className="mt-6 font-display text-5xl font-extrabold tracking-tight text-ink sm:text-7xl lg:text-8xl coming-soon-breathe">
+          Coming <span className="text-brand">soon</span>
+          <span className="text-brand">....</span>
+        </h2>
+        <p className="mx-auto mt-6 max-w-md text-base text-slate-600 sm:text-lg">
+          We're putting the finishing touches on Seenzo. Check back shortly to
+          see how AI sees your business.
+        </p>
+      </div>
+    </div>
   );
 }
 
