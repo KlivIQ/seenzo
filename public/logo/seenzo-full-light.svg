@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" fill="none">
+  <g transform="translate(4,4)">
+    <path d="M4 32C10 18 20 12 32 12C44 12 54 18 60 32C54 46 44 52 32 52C20 52 10 46 4 32Z" stroke="#1E1B4B" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="32" cy="32" r="10" stroke="#1E1B4B" stroke-width="4"/>
+    <path d="M6 32H23L27 26L32 38L37 28L41 32H58" stroke="#4F46E5" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <text x="86" y="49" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="700" letter-spacing="-1.2" fill="#0F172A">seenzo</text>
+</svg>
