@@ -980,7 +980,6 @@ function Footer() {
   const legalLinks: Array<[string, string]> = [
     ["Terms & Conditions", "#"],
     ["Privacy Policy", "#"],
-    ["Refund Policy", "#"],
     ["Contact", "#"],
   ];
   const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
