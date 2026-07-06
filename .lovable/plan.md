@@ -1,38 +1,59 @@
-## New Route: `/r/$slug` — Seenzo Scan Report
+## New Route: `/admin` — Admin Dashboard (UI only)
 
-Create a dynamic report page with full UI and mock data. Uses existing dark theme, `SiteShell` for header/footer, and amber (#F59E0B) accent.
+Build the full admin UI with mock data. No auth, no backend wiring yet.
 
 ### Files
 
-**Create `src/routes/r.$slug.tsx`**
-- `createFileRoute("/r/$slug")` with `head()` setting report-specific title/description + `robots: noindex` (report pages shouldn't be indexed).
-- Reads `slug` via `Route.useParams()` (unused for now — mock data is static; wired later).
-- Renders inside `<SiteShell>` so nav + footer match the site.
+**Create `src/routes/admin.tsx`**
+- `createFileRoute("/admin")` with `head()` setting title + `robots: noindex`.
+- Self-contained dark-themed shell (matches the report page palette: `bg-slate-950`, amber accents) so it feels like the internal Seenzo tool rather than the marketing site.
+- Local component state for search, status filter, sort column/direction, selected lead, and per-lead status/notes overrides.
 
-**Create `src/components/report/` (small, focused components)**
-- `ReportHeader.tsx` — Seenzo logo + "by KlivIQ", business name, URL scanned, scan date.
-- `ScoreDial.tsx` — animated SVG circular dial (0–100), amber stroke, grade badge (A/B/C/D/F), one-line verdict.
-- `CategoryBars.tsx` — six horizontal bars (Crawlability, Structured Data, Metadata, Content Quality, India Presence, Trust Signals) with pass (emerald) / partial (amber) / fail (rose) coding.
-- `PriorityFixes.tsx` — numbered list of top 5 fixes; each has title, description, effort badge (Quick Win / 2–3 Days / 1 Week), projected score impact (+N).
-- `ProjectedScore.tsx` — current vs projected score side-by-side with an arrow.
-- `CheckAppendix.tsx` — collapsible `<details>` per category listing all 30 checks with pass/partial/fail icons + evidence text.
-- `ReportCTA.tsx` — amber background block with "Book your free 20-min consultation" (→ https://cal.com) and WhatsApp button (→ https://wa.me/919840497937).
-- `PrintButton.tsx` — button calling `window.print()`; hidden in print.
+**Create `src/lib/mock-admin.ts`**
+- Exports `leads`: ~18 realistic Indian SMB leads (name, business, email, phone, city, website, score 0–100, heatScore 0–100, status, createdAt, lastActivityAt, reportSlug).
+- Exports `activityFor(leadId)`: mock timeline events (scan requested, email verified, scan completed, report viewed, WhatsApp sent, etc.).
+- `statuses` const array in canonical order for dropdowns and badge colours.
 
-**Create `src/lib/mock-report.ts`**
-- Exports a realistic mock report: business "Anand Sweets", URL "anandsweets.in", date, overall score 62, grade "C", six category scores, 5 prioritized fixes, projected score 84, and 30 individual checks grouped by category with pass/partial/fail + evidence strings.
+### UI structure
 
-**Edit `src/styles.css`**
-- Add `@media print` block: hide `nav`, `footer`, `.no-print` (CTA, print button, coming-soon overlay); force light background, black text, remove shadows, expand collapsibles.
+1. **Top bar** — "Seenzo Admin · by KlivIQ" left, mock user chip right (avatar + "admin@kliviq.com"). Note: "Preview UI — no auth yet." pill.
+
+2. **Metric tiles (4-col grid, stacks on mobile)** — computed from mock data:
+   - Scans This Week (count of leads with `scanned`/later status in last 7 days)
+   - Verification Rate (verified+ / total, %)
+   - Avg Score (mean of scored leads)
+   - Scan→Consult Rate (consult_booked+won / scanned, %)
+   Each tile: label, big number, small delta vs "last week" (mock ±%).
+
+3. **Leads panel** (card):
+   - Header row: title "Leads", search input (name/business/email), status filter `<select>`, "Export CSV" button top right (client-side Blob download of currently filtered rows).
+   - Table with sortable headers (click to toggle asc/desc, arrow indicator): Name · Business · Score (colored badge amber/lime/rose by band) · Heat Score (small horizontal bar 0–100) · Status (inline `<select>` that updates local state) · Created (relative) · Last Activity (relative).
+   - Row click opens the detail panel; the status `<select>` uses `stopPropagation` so changing status doesn't open the panel.
+   - Empty state when filters yield no rows.
+
+4. **Lead detail — slide-in drawer** (right side, ~480px, backdrop click closes; ESC also closes):
+   - Header: name, business, status badge, close X.
+   - Contact block: email, phone, website, city (each with copy-to-clipboard icon).
+   - Scan summary: score dial (small SVG), grade, verdict line, "Open full report →" link to `/r/{reportSlug}`.
+   - Activity timeline: vertical list with dots + timestamps.
+   - Notes: textarea with "Save note" button (updates local state only).
+   - Status dropdown (mirrors table).
+   - Actions row: "Re-run Scan" (secondary) and "Delete Lead" (red). Delete opens a confirm dialog (native modal with cancel/confirm); on confirm, removes from local list and closes the drawer.
+
+### CSV Export
+- Client-side: build CSV from current filtered+sorted rows with columns matching the table (plus email/phone), escape quotes, trigger download via `Blob` + `URL.createObjectURL` as `seenzo-leads-YYYY-MM-DD.csv`. No new dependency.
 
 ### Behaviour details
-- Score dial animates from 0 to target on mount (CSS transition on `stroke-dashoffset`).
-- Category bars animate width from 0 to value on mount.
-- All CTA/print controls carry `className="no-print"`.
-- Report body carries `className="print:bg-white print:text-black"` plus the print stylesheet.
-- Page uses responsive grid: single column mobile, 2-col grid for dial + verdict on md+.
+- All mutations (status change, note save, delete, re-run) are optimistic local state only — no network calls.
+- Re-run Scan shows a 1.5s spinner then a toast-style inline "Scan queued" message (local state, auto-hides).
+- Sorting is stable; numeric columns sort numerically, dates by timestamp.
+- Status badges: unverified=slate, verified=sky, scanned=amber, contacted=violet, consult_booked=lime, won=emerald, lost=rose.
+- Score badges: ≥80 emerald, 60–79 amber, <60 rose.
+- Drawer uses CSS transform transition; not a routed page (so `/admin` stays a single route).
+- Route is `noindex` and not linked from the public nav — reachable by typing `/admin`.
 
 ### Out of scope
-- Real data wiring (loader, DB, scan pipeline).
-- PDF generation beyond `window.print()`.
-- Auth / access control on report URLs.
+- Authentication / route protection.
+- Real data fetching, RLS, edge functions.
+- Server-side pagination (mock set is small).
+- Bulk actions, saved views, column customization.
