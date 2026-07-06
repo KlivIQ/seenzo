@@ -178,6 +178,17 @@ function Hero() {
             See how <span className="text-brand">AI</span> sees
             <br /> your business.
           </h1>
+          <p className="mt-4 text-sm text-slate-500">
+            Built by KlivIQ Technologies · 20+ years enterprise IT ·{" "}
+            <a
+              href="https://kliviq.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-brand-ink underline underline-offset-4 hover:text-ink"
+            >
+              kliviq.com
+            </a>
+          </p>
           <p className="mt-6 max-w-xl text-lg text-slate-600">
             ChatGPT, Gemini, Perplexity and Claude already answer questions about your
             industry every day. Seenzo shows you exactly what they say about you — and
@@ -356,34 +367,12 @@ function ModelBar({ name, value, delay }: { name: string; value: number; delay: 
 
 /* ---------- Trusted by ---------- */
 function TrustedBy() {
-  const items = [
-    "Textile Mills Co.",
-    "Chennai Legal Partners",
-    "Anantha Clinics",
-    "Blue Peak Realty",
-    "Sundar Motors",
-    "Praveen & Sons",
-    "Vaidya Ayurveda",
-    "Coastal Cargo",
-  ];
   return (
     <section className="border-y border-slate-100 bg-slate-50/60 py-10">
       <div className="mx-auto max-w-6xl px-5">
         <p className="text-center text-sm font-semibold tracking-widest text-slate-500 uppercase">
-          Trusted by growing businesses across India
+          Used by early testers across Chennai, Bengaluru and Pune
         </p>
-        <div className="mt-6 overflow-hidden">
-          <div className="marquee-track flex w-max gap-12">
-            {[...items, ...items].map((n, i) => (
-              <span
-                key={i}
-                className="font-display text-lg font-semibold text-slate-400 whitespace-nowrap"
-              >
-                {n}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );
@@ -391,23 +380,6 @@ function TrustedBy() {
 
 /* ---------- Why it matters ---------- */
 function WhyItMatters() {
-  const stats = [
-    {
-      figure: "1 in 3",
-      label:
-        "buying decisions in India now start with an AI answer, not a Google search.",
-    },
-    {
-      figure: "72%",
-      label:
-        "of AI-cited businesses see a lift in qualified inbound within 60 days.",
-    },
-    {
-      figure: "0",
-      label:
-        "clicks required. If AI doesn't mention you, most buyers will never know you exist.",
-    },
-  ];
   return (
     <Section id="why">
       <SectionHeader
@@ -415,18 +387,10 @@ function WhyItMatters() {
         title="Search is quietly moving to AI answers."
         sub="Your customers are asking ChatGPT, Gemini and Perplexity the same questions they used to type into Google. The answers rarely include a link — so being mentioned by name is the new #1 result."
       />
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
-        {stats.map((s) => (
-          <div
-            key={s.figure}
-            className="rounded-2xl border border-slate-200 bg-white p-8 transition hover:border-slate-300"
-          >
-            <div className="font-display text-5xl font-extrabold text-ink">
-              {s.figure}
-            </div>
-            <p className="mt-3 text-[15px] leading-relaxed text-slate-600">{s.label}</p>
-          </div>
-        ))}
+      <div className="mx-auto mt-14 max-w-3xl rounded-2xl border border-slate-200 bg-white p-10 text-center">
+        <p className="font-display text-2xl leading-snug font-bold text-ink sm:text-3xl">
+          Most Indian business websites are invisible to AI engines. Yours might be too.
+        </p>
       </div>
     </Section>
   );
@@ -863,50 +827,17 @@ function WhyIndia() {
 
 /* ---------- Testimonials ---------- */
 function Testimonials() {
-  const quotes = [
-    {
-      q: "The report told us Perplexity was recommending a competitor with wrong pricing. We fixed our schema in a weekend — enquiries doubled within a month.",
-      name: "Aditi R.",
-      role: "Founder, Chennai apparel exporter",
-    },
-    {
-      q: "Finally an audit written in plain language. Our sales team actually read it — and acted on it.",
-      name: "Vikram S.",
-      role: "Head of Growth, Pune B2B services",
-    },
-    {
-      q: "We didn't even know ChatGPT was answering questions about our clinic. Seenzo made the invisible visible.",
-      name: "Dr. Meera K.",
-      role: "Bangalore dental practice",
-    },
-  ];
   return (
     <Section id="testimonials">
       <SectionHeader
         eyebrow="Testimonials"
         title="Early Seenzo users, in their words."
       />
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
-        {quotes.map((t) => (
-          <div
-            key={t.name}
-            className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-7"
-          >
-            <Quote className="h-6 w-6 text-brand" />
-            <p className="mt-4 flex-1 text-[15px] leading-relaxed text-slate-700">
-              {t.q}
-            </p>
-            <div className="mt-6 border-t border-slate-100 pt-4">
-              <div className="text-sm font-semibold text-ink">{t.name}</div>
-              <div className="text-xs text-slate-500">{t.role}</div>
-              <div className="mt-2 flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="mx-auto mt-14 max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <Quote className="mx-auto h-8 w-8 text-brand" />
+        <p className="mt-4 font-display text-xl font-bold text-ink sm:text-2xl">
+          Early results coming soon — be one of our first 50 scans.
+        </p>
       </div>
     </Section>
   );
@@ -1021,15 +952,15 @@ function Footer() {
     ["Request scan", "#scan"],
   ];
   const legalLinks: Array<[string, string]> = [
-    ["Terms & Conditions", "#"],
-    ["Privacy Policy", "#"],
+    ["Terms & Conditions", "/terms"],
+    ["Privacy Policy", "/privacy"],
     ["Contact", "#"],
   ];
   const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
-    { label: "Facebook", href: "#", Icon: Facebook },
-    { label: "Instagram", href: "#", Icon: Instagram },
-    { label: "X (Twitter)", href: "#", Icon: Twitter },
-    { label: "LinkedIn", href: "#", Icon: Linkedin },
+    { label: "Facebook", href: "https://facebook.com/seenzo", Icon: Facebook },
+    { label: "Instagram", href: "https://instagram.com/seenzo", Icon: Instagram },
+    { label: "X (Twitter)", href: "https://x.com/seenzo", Icon: Twitter },
+    { label: "LinkedIn", href: "https://linkedin.com/company/seenzo", Icon: Linkedin },
   ];
   return (
     <footer className="border-t border-slate-200 bg-white">
@@ -1048,6 +979,8 @@ function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-ink"
                 >
                   <Icon className="h-4 w-4" />
