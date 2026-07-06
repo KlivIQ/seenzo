@@ -178,6 +178,17 @@ function Hero() {
             See how <span className="text-brand">AI</span> sees
             <br /> your business.
           </h1>
+          <p className="mt-4 text-sm text-slate-500">
+            Built by KlivIQ Technologies · 20+ years enterprise IT ·{" "}
+            <a
+              href="https://kliviq.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-brand-ink underline underline-offset-4 hover:text-ink"
+            >
+              kliviq.com
+            </a>
+          </p>
           <p className="mt-6 max-w-xl text-lg text-slate-600">
             ChatGPT, Gemini, Perplexity and Claude already answer questions about your
             industry every day. Seenzo shows you exactly what they say about you — and
@@ -941,15 +952,15 @@ function Footer() {
     ["Request scan", "#scan"],
   ];
   const legalLinks: Array<[string, string]> = [
-    ["Terms & Conditions", "#"],
-    ["Privacy Policy", "#"],
+    ["Terms & Conditions", "/terms"],
+    ["Privacy Policy", "/privacy"],
     ["Contact", "#"],
   ];
   const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
-    { label: "Facebook", href: "#", Icon: Facebook },
-    { label: "Instagram", href: "#", Icon: Instagram },
-    { label: "X (Twitter)", href: "#", Icon: Twitter },
-    { label: "LinkedIn", href: "#", Icon: Linkedin },
+    { label: "Facebook", href: "https://facebook.com/seenzo", Icon: Facebook },
+    { label: "Instagram", href: "https://instagram.com/seenzo", Icon: Instagram },
+    { label: "X (Twitter)", href: "https://x.com/seenzo", Icon: Twitter },
+    { label: "LinkedIn", href: "https://linkedin.com/company/seenzo", Icon: Linkedin },
   ];
   return (
     <footer className="border-t border-slate-200 bg-white">
@@ -968,6 +979,8 @@ function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-ink"
                 >
                   <Icon className="h-4 w-4" />
