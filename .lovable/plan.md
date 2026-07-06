@@ -1,40 +1,45 @@
 ## Changes
 
-### 1. Logo — "by KlivIQ" lockup
-- Update `src/components/site/Logo.tsx` so the `full` variant always renders a small "by KlivIQ" line (uppercase, tracked, `text-[10px]` slate-500) directly under "seenzo", aligned to the wordmark (not the icon). Remove the `withTagline` toggle — it's default now.
-- Regenerate `public/logo/seenzo-full-light.svg` and `seenzo-full-dark.svg` to include the "by KlivIQ" sub-line so downloaded/OG assets match.
+All edits are in `src/routes/index.tsx` and `src/components/site/ScanForm.tsx`. Layout, colours, animations and fonts stay untouched.
 
-### 2. Tagline "Get seen by AI"
-- Add tagline as a pill/eyebrow above the hero H1 ("Get seen by AI").
-- Add tagline in footer, directly under the footer logo.
+### 1. Replace `TrustedBy` marquee (index.tsx)
+Rewrite the `TrustedBy` component body to render a single centered line inside the same `<section>` wrapper (same padding, border, background):
+- Text: **"Used by early testers across Chennai, Bengaluru and Pune"**
+- Keep the current caption typography style so it visually matches the removed eyebrow.
 
-### 3. Header nav
-- Add **Home** (scrolls to `#top`) and **Benefits** (`#benefits`) to the primary nav, keeping existing items. Ensure the Benefits section has `id="benefits"`.
+### 2. Replace `Testimonials` cards (index.tsx)
+Replace the three testimonial cards (Aditi R., Vikram S., Dr. Meera K.) inside the existing `Testimonials` section with a single centered placeholder block:
+- Text: **"Early results coming soon — be one of our first 50 scans"**
+- Keep the section wrapper, eyebrow, and heading area intact so section rhythm is preserved.
 
-### 4. Pill text size +2
-- Bump every "pill" / chip / eyebrow badge across the page from their current size (mostly `text-xs` / `text-[11px]`) up by ~2px (→ `text-sm` / `text-[13px]`). Applies to hero trust chips, section eyebrows, comparison tags, "Why India" chips, testimonial tags, FAQ tag, etc.
+### 3. Replace unsourced stats in `WhyItMatters` (index.tsx)
+Remove the three stat cards ("1 in 3", "72%", "0"). Replace with a single centered statement card/paragraph:
+- Text: **"Most Indian business websites are invisible to AI engines. Yours might be too."**
+- Keep the `SectionHeader` above it unchanged.
 
-### 5. Form validation (mock stays)
-- Form is currently a **mock** (console.info + toast, no backend). Keeping it mock this pass per your choice.
-- Harden validation in `src/lib/scan-schema.ts` and `ScanForm.tsx`:
-  - All 5 fields required (already are via zod).
-  - Add `required` + `aria-invalid` + inline red border on error.
-  - Trigger validation on blur and on submit (`mode: "onBlur"`).
-  - Normalize website (auto-prefix `https://` before regex if missing) and phone (strip spaces).
-  - Ensure empty submit shows all field errors at once and focuses the first invalid field.
-- Add a small note under the button: "This is a demo form — submissions are not stored yet."
+### 4. Footer link fixes (index.tsx)
+- Update `legalLinks`: **Terms → `/terms`**, **Privacy Policy → `/privacy`** (Contact stays `#` for now — user didn't specify).
+- Update social icon `href`s to real profile URLs with handle `seenzo`:
+  - Facebook → `https://facebook.com/seenzo`
+  - Instagram → `https://instagram.com/seenzo`
+  - X → `https://x.com/seenzo`
+  - LinkedIn → `https://linkedin.com/company/seenzo`
+- Add `target="_blank"` and `rel="noopener noreferrer"` on social icons.
 
-### 6. Footer
-Rebuild footer with:
-- Left: logo + "by KlivIQ" + tagline + short blurb.
-- Middle: Quick links (Home, Benefits, How it works, FAQ, Request scan).
-- Right: Legal — **Terms & Conditions**, **Privacy Policy**, **Refund Policy**, **Contact** (all `href="#"` for now).
-- Social icons row: Facebook, Instagram, X, LinkedIn (lucide icons, `href="#"`, `aria-label`s).
-- Bottom bar:
-  - `© 2026 KlivIQ Technologies OPC Private Limited. All rights reserved.`
-  - **Disclaimer (tiny, `text-[11px]` slate-400):** "Seenzo provides general AI-visibility insights based on public model behavior at the time of scanning. Results are indicative only and do not guarantee rankings, citations, traffic, or business outcomes across ChatGPT, Gemini, Perplexity, Claude or any other AI system."
+Note: `/terms` and `/privacy` routes don't exist yet — the plan explicitly leaves them as dead links per the user's "we will build these pages next".
+
+### 5. Hero credit line (index.tsx)
+In the `Hero` component, directly under the wordmark/H1 area (below the H1, above the subheading paragraph), add:
+- **"Built by KlivIQ Technologies · 20+ years enterprise IT · kliviq.com"**
+- Small muted text, `kliviq.com` linked to `https://kliviq.com` (new tab). Uses existing slate-500 / text-sm style already in the hero to avoid new visual tokens.
+
+### 6. ScanForm submit UX (ScanForm.tsx)
+The button already shows a `Loader2` spinner + "Queuing your scan…" while `isSubmitting` — that satisfies "loading state when clicked". Additionally:
+- Add a new helper line **below the button** (above/replacing the existing tiny helper text stack? — will be added as an additional line, keeping existing copy intact):
+  - **"We'll verify your email before running the scan"**
+  - Same muted style as existing helper lines so nothing visually shifts.
 
 ## Out of scope
-- Real form submission / lead storage (needs Lovable Cloud — skipped per your choice).
-- Real Terms/Privacy page content (links point to `#`).
-- Real social profile URLs (all `#`).
+- Building `/terms` and `/privacy` pages (user said "next").
+- Any real email verification flow — the form stays a mock; only the copy is added.
+- Any layout, colour, animation, or font changes.
