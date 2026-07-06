@@ -54,6 +54,18 @@
   animation: soft-pulse 2.4s ease-in-out infinite;
 }
 
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+  details { break-inside: avoid; }
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details:not([open]) > *:not(summary) { display: block !important; }
+  a { color: inherit; text-decoration: none; }
+  * { box-shadow: none !important; }
+  @page { margin: 16mm; }
+}
+
 /*
  * Design system definition.
  *
