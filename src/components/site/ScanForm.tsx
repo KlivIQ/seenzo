@@ -153,6 +153,9 @@ export function ScanForm({ compact = false, className }: Props) {
       <p className="mt-3 text-center text-xs text-slate-500">
         No credit card. No contracts. Report delivered in minutes.
       </p>
+      <p className="mt-2 text-center text-xs text-slate-500">
+        We'll verify your email before running the scan.
+      </p>
       <p className="mt-2 text-center text-[11px] text-slate-400">
         Demo form — submissions are not stored yet.
       </p>
