@@ -864,7 +864,7 @@ function FAQ() {
     },
     {
       q: "What happens to my data?",
-      a: "Data is stored in India (Mumbai region) and handled per the DPDP Act. We never sell or share your data. Ask us to delete it anytime and it's gone within 24 hours.",
+      a: "Data is stored in India and handled per the DPDP Act. We never sell or share your data. Ask us to delete it anytime and it's gone within 7 business days.",
     },
     {
       q: "Do you offer fixes, or just the report?",
