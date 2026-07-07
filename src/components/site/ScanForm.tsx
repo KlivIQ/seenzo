@@ -4,12 +4,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { scanSchema, type ScanFormValues } from "@/lib/scan-schema";
+import type { ScanRequestResult } from "@/lib/server/scan-request";
 import { cn } from "@/lib/utils";
 
 type Props = { compact?: boolean; className?: string };
 
+type Outcome = { kind: "verify" } | { kind: "duplicate"; reportSlug: string };
+
 export function ScanForm({ compact = false, className }: Props) {
-  const [submitted, setSubmitted] = useState(false);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
   const {
     register,
     handleSubmit,
@@ -24,17 +27,37 @@ export function ScanForm({ compact = false, className }: Props) {
   });
 
   const onSubmit = async (values: ScanFormValues) => {
-    await new Promise((r) => setTimeout(r, 900));
-    // Lead capture placeholder — wire to backend when available
-    console.info("[Seenzo] scan requested", values);
-    toast.success("Your scan is queued", {
-      description: "We'll email your AI Visibility Report within a few minutes.",
-    });
-    setSubmitted(true);
-    reset();
+    try {
+      const res = await fetch("/api/scan-request", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const result = (await res.json()) as ScanRequestResult;
+
+      if (result.success) {
+        setOutcome(
+          result.reportSlug
+            ? { kind: "duplicate", reportSlug: result.reportSlug }
+            : { kind: "verify" },
+        );
+        reset();
+        return;
+      }
+
+      if (result.code === "rate_limited") {
+        toast.error(
+          "You've already requested a scan recently. Check your inbox for your previous report.",
+        );
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
-  if (submitted) {
+  if (outcome) {
     return (
       <div
         className={cn(
@@ -43,15 +66,26 @@ export function ScanForm({ compact = false, className }: Props) {
         )}
       >
         <CheckCircle2 className="mx-auto h-10 w-10 text-brand" />
-        <h3 className="mt-4 font-display text-xl font-bold text-ink">
-          Request received.
-        </h3>
-        <p className="mt-2 text-sm text-slate-600">
-          Your AI Visibility Report is being generated. Check your email in a few
-          minutes — we also send a WhatsApp copy.
-        </p>
+        <h3 className="mt-4 font-display text-xl font-bold text-ink">Request received.</h3>
+        {outcome.kind === "duplicate" ? (
+          <>
+            <p className="mt-2 text-sm text-slate-600">
+              We've already scanned this site. Check your email for the existing report.
+            </p>
+            <a
+              href={`/r/${outcome.reportSlug}`}
+              className="mt-3 inline-block text-sm font-medium text-brand-ink underline underline-offset-4"
+            >
+              View existing report
+            </a>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-slate-600">
+            Check your email — we've sent you a verification link to start your scan.
+          </p>
+        )}
         <button
-          onClick={() => setSubmitted(false)}
+          onClick={() => setOutcome(null)}
           className="mt-5 text-sm font-medium text-brand-ink underline underline-offset-4"
         >
           Scan another site

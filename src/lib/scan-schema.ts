@@ -38,10 +38,7 @@ export const scanSchema = z.object({
       z
         .string()
         .max(200, "URL is too long")
-        .regex(
-          /^https?:\/\/([\w-]+\.)+[\w-]{2,}(\/.*)?$/i,
-          "Enter a valid website URL",
-        ),
+        .regex(/^https?:\/\/([\w-]+\.)+[\w-]{2,}(\/.*)?$/i, "Enter a valid website URL"),
     ),
 });
 

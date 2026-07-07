@@ -7,24 +7,41 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-brand: #10B981;
-  --color-brand-ink: #065F46;
-  --color-brand-soft: #ECFDF5;
-  --color-spark: #F59E0B;
-  --color-ink: #0F172A;
+  --color-brand: #10b981;
+  --color-brand-ink: #065f46;
+  --color-brand-soft: #ecfdf5;
+  --color-spark: #f59e0b;
+  --color-ink: #0f172a;
 }
 
 @keyframes rise {
-  0% { opacity: 0; transform: translateY(16px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes spark {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(1.08); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.08);
+  }
 }
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 @utility rise-in {
@@ -39,15 +56,35 @@
 }
 
 @media print {
-  .no-print { display: none !important; }
-  body { background: #fff !important; color: #000 !important; }
-  details { break-inside: avoid; }
-  details > summary { list-style: none; }
-  details > summary::-webkit-details-marker { display: none; }
-  details:not([open]) > *:not(summary) { display: block !important; }
-  a { color: inherit; text-decoration: none; }
-  * { box-shadow: none !important; }
-  @page { margin: 16mm; }
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  details {
+    break-inside: avoid;
+  }
+  details > summary {
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+  details:not([open]) > *:not(summary) {
+    display: block !important;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  * {
+    box-shadow: none !important;
+  }
+  @page {
+    margin: 16mm;
+  }
 }
 
 /*

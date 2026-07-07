@@ -147,9 +147,9 @@ function Hero() {
             </a>
           </p>
           <p className="mt-6 max-w-xl text-lg text-slate-600">
-            ChatGPT, Gemini, Perplexity and Claude already answer questions about your
-            industry every day. Seenzo shows you exactly what they say about you — and
-            what to fix to get found.
+            ChatGPT, Gemini, Perplexity and Claude already answer questions about your industry
+            every day. Seenzo shows you exactly what they say about you — and what to fix to get
+            found.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -169,17 +169,14 @@ function Hero() {
           </div>
 
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-            {[
-              "No contracts",
-              "No 12-month lock-ins",
-              "Report in minutes",
-              "100% free scan",
-            ].map((t) => (
-              <li key={t} className="inline-flex items-center gap-1.5">
-                <Check className="h-4 w-4 text-brand" />
-                {t}
-              </li>
-            ))}
+            {["No contracts", "No 12-month lock-ins", "Report in minutes", "100% free scan"].map(
+              (t) => (
+                <li key={t} className="inline-flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-brand" />
+                  {t}
+                </li>
+              ),
+            )}
           </ul>
         </div>
 
@@ -201,16 +198,14 @@ function BackgroundGrid() {
           backgroundImage:
             "linear-gradient(to right, #E2E8F0 1px, transparent 1px), linear-gradient(to bottom, #E2E8F0 1px, transparent 1px)",
           backgroundSize: "56px 56px",
-          maskImage:
-            "radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 75%)",
+          maskImage: "radial-gradient(ellipse 70% 60% at 50% 20%, #000 30%, transparent 75%)",
         }}
       />
       <div
         aria-hidden
         className="pointer-events-none absolute top-0 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
         style={{
-          background:
-            "radial-gradient(closest-side, rgba(16,185,129,0.15), transparent)",
+          background: "radial-gradient(closest-side, rgba(16,185,129,0.15), transparent)",
         }}
       />
     </>
@@ -248,9 +243,7 @@ function HeroReportCard() {
 
       <div className="mt-6 flex items-end justify-between">
         <div>
-          <div className="font-display text-6xl font-extrabold text-ink tabular-nums">
-            {score}
-          </div>
+          <div className="font-display text-6xl font-extrabold text-ink tabular-nums">{score}</div>
           <div className="mt-1 text-sm font-medium tracking-wide text-slate-500 uppercase">
             Visibility Score · Needs work
           </div>
@@ -265,9 +258,7 @@ function HeroReportCard() {
       </div>
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          Top fix
-        </div>
+        <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Top fix</div>
         <div className="mt-1 text-sm text-ink">
           Add a services schema on your homepage — recovers ~18 points across 3 engines.
         </div>
@@ -374,16 +365,10 @@ function HowItWorks() {
   ];
   return (
     <Section id="how" className="bg-slate-50/60">
-      <SectionHeader
-        eyebrow="How Seenzo works"
-        title="Three steps. Under five minutes."
-      />
+      <SectionHeader eyebrow="How Seenzo works" title="Three steps. Under five minutes." />
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {steps.map((s, i) => (
-          <div
-            key={s.title}
-            className="relative rounded-2xl border border-slate-200 bg-white p-7"
-          >
+          <div key={s.title} className="relative rounded-2xl border border-slate-200 bg-white p-7">
             <div className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full bg-ink text-xs font-bold text-white">
               {i + 1}
             </div>
@@ -418,8 +403,8 @@ function ScoreOverview() {
             One number. Four honest signals.
           </h2>
           <p className="mt-4 text-lg text-slate-600">
-            The AI Visibility Score (0–100) tells you at a glance where you stand. The
-            four pillars underneath tell you exactly what to fix first.
+            The AI Visibility Score (0–100) tells you at a glance where you stand. The four pillars
+            underneath tell you exactly what to fix first.
           </p>
           <a
             href="#scan"
@@ -448,15 +433,10 @@ function ScoreOverview() {
               <div key={p.name} className="rounded-xl border border-slate-200 p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-ink">{p.name}</span>
-                  <span className="text-sm font-bold tabular-nums text-brand-ink">
-                    {p.value}
-                  </span>
+                  <span className="text-sm font-bold tabular-nums text-brand-ink">{p.value}</span>
                 </div>
                 <div className="mt-2 h-1.5 rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-brand"
-                    style={{ width: `${p.value}%` }}
-                  />
+                  <div className="h-full rounded-full bg-brand" style={{ width: `${p.value}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-slate-500">{p.desc}</p>
               </div>
@@ -520,9 +500,7 @@ function SampleReport() {
                   <span className="font-medium text-slate-700">{r.k}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      r.ok
-                        ? "bg-brand-soft text-brand-ink"
-                        : "bg-amber-50 text-amber-700"
+                      r.ok ? "bg-brand-soft text-brand-ink" : "bg-amber-50 text-amber-700"
                     }`}
                   >
                     {r.ok ? "Mentioned" : "Missing"} · {r.v}%
@@ -537,8 +515,7 @@ function SampleReport() {
           body={
             <div className="space-y-3 text-sm text-slate-600">
               <p className="rounded-lg bg-slate-50 p-3 leading-relaxed">
-                "A Chennai-based textile exporter known for bulk orders and reliable
-                shipping."
+                "A Chennai-based textile exporter known for bulk orders and reliable shipping."
               </p>
               <p className="rounded-lg bg-slate-50 p-3 leading-relaxed">
                 "Founded 2011. GST-registered. Serves apparel brands across South India."
@@ -572,9 +549,7 @@ function SampleReport() {
 function SampleCard({ title, body }: { title: string; body: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6">
-      <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-        {title}
-      </div>
+      <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{title}</div>
       <div className="mt-4">{body}</div>
     </div>
   );
@@ -616,10 +591,7 @@ function Features() {
   ];
   return (
     <Section id="features">
-      <SectionHeader
-        eyebrow="Key features"
-        title="Everything you need to be found."
-      />
+      <SectionHeader eyebrow="Key features" title="Everything you need to be found." />
       <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((f) => (
           <div
@@ -641,10 +613,22 @@ function Features() {
 /* ---------- Benefits ---------- */
 function Benefits() {
   const items = [
-    { title: "Win the answer, not just the click", body: "Get named in the AI response — even when there's no link to click." },
-    { title: "Fix the right things first", body: "A prioritised list that turns effort into score movement." },
-    { title: "Know when you're winning", body: "Re-scan any time and watch your Visibility Score climb." },
-    { title: "No agency lock-in", body: "You keep the report. You keep the wins. No 12-month contract." },
+    {
+      title: "Win the answer, not just the click",
+      body: "Get named in the AI response — even when there's no link to click.",
+    },
+    {
+      title: "Fix the right things first",
+      body: "A prioritised list that turns effort into score movement.",
+    },
+    {
+      title: "Know when you're winning",
+      body: "Re-scan any time and watch your Visibility Score climb.",
+    },
+    {
+      title: "No agency lock-in",
+      body: "You keep the report. You keep the wins. No 12-month contract.",
+    },
   ];
   return (
     <Section id="benefits" className="bg-slate-50/60">
@@ -658,8 +642,8 @@ function Benefits() {
             <br /> Not 12-month promises.
           </h2>
           <p className="mt-4 text-lg text-slate-600">
-            Most agencies sell you a year and hope you don't measure. Seenzo measures
-            first — then tells you what's worth doing.
+            Most agencies sell you a year and hope you don't measure. Seenzo measures first — then
+            tells you what's worth doing.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -762,17 +746,13 @@ function WhyIndia() {
           Global tools ignore the way India buys.
         </h2>
         <p className="mt-4 text-lg text-slate-300">
-          The AI visibility category is dominated by tools built for US enterprises. Seenzo
-          is built from the ground up for how businesses are actually found — and hired —
-          in India.
+          The AI visibility category is dominated by tools built for US enterprises. Seenzo is built
+          from the ground up for how businesses are actually found — and hired — in India.
         </p>
       </div>
       <div className="mx-auto mt-14 grid max-w-4xl gap-4 sm:grid-cols-2">
         {points.map((p) => (
-          <div
-            key={p.title}
-            className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
-          >
+          <div key={p.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
             <h3 className="font-display text-lg font-bold">{p.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-slate-300">{p.body}</p>
           </div>
@@ -786,10 +766,7 @@ function WhyIndia() {
 function Testimonials() {
   return (
     <Section id="testimonials">
-      <SectionHeader
-        eyebrow="Testimonials"
-        title="Early Seenzo users, in their words."
-      />
+      <SectionHeader eyebrow="Testimonials" title="Early Seenzo users, in their words." />
       <div className="mx-auto mt-14 max-w-2xl rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
         <Quote className="mx-auto h-8 w-8 text-brand" />
         <p className="mt-4 font-display text-xl font-bold text-ink sm:text-2xl">
@@ -855,9 +832,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
           }`}
         />
       </button>
-      {open && (
-        <div className="px-6 pb-5 text-[15px] leading-relaxed text-slate-600">{a}</div>
-      )}
+      {open && <div className="px-6 pb-5 text-[15px] leading-relaxed text-slate-600">{a}</div>}
     </div>
   );
 }
@@ -876,8 +851,8 @@ function FinalCTA() {
             See how AI sees you — <span className="text-brand">today.</span>
           </h2>
           <p className="mt-4 max-w-lg text-lg text-slate-600">
-            Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix
-            list. Delivered by email and WhatsApp in minutes.
+            Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix list.
+            Delivered by email and WhatsApp in minutes.
           </p>
           <ul className="mt-6 space-y-2.5 text-sm text-slate-700">
             {[
@@ -927,8 +902,8 @@ function Footer() {
             <Logo />
             <p className="mt-4 text-sm font-semibold text-brand-ink">Get seen by AI.</p>
             <p className="mt-2 max-w-xs text-sm leading-relaxed text-slate-600">
-              Seenzo shows Indian businesses exactly how ChatGPT, Gemini,
-              Perplexity and Claude describe them — and how to get found.
+              Seenzo shows Indian businesses exactly how ChatGPT, Gemini, Perplexity and Claude
+              describe them — and how to get found.
             </p>
             <div className="mt-5 flex items-center gap-2">
               {socials.map(({ label, href, Icon }) => (
@@ -972,13 +947,11 @@ function Footer() {
 
         <div className="mt-12 border-t border-slate-200 pt-6">
           <p className="text-[11px] leading-relaxed text-slate-400">
-            Disclaimer: Seenzo provides general AI-visibility insights based on
-            public model behaviour at the time of scanning. Results are
-            indicative only and do not guarantee rankings, citations, traffic,
-            revenue, or any specific business outcomes across ChatGPT, Gemini,
-            Perplexity, Claude or any other AI system. AI models change
-            frequently and their responses can vary between users, regions and
-            sessions.
+            Disclaimer: Seenzo provides general AI-visibility insights based on public model
+            behaviour at the time of scanning. Results are indicative only and do not guarantee
+            rankings, citations, traffic, revenue, or any specific business outcomes across ChatGPT,
+            Gemini, Perplexity, Claude or any other AI system. AI models change frequently and their
+            responses can vary between users, regions and sessions.
           </p>
           <p className="mt-4 text-xs text-slate-500">
             © 2026 KlivIQ Technologies OPC Private Limited. All rights reserved.
@@ -992,9 +965,7 @@ function Footer() {
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-sm font-semibold tracking-wide text-ink uppercase">
-        {title}
-      </div>
+      <div className="text-sm font-semibold tracking-wide text-ink uppercase">{title}</div>
       <div className="mt-4 flex flex-col gap-2.5">{children}</div>
     </div>
   );
@@ -1002,10 +973,7 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a
-      href={href}
-      className="text-sm text-slate-600 transition hover:text-ink"
-    >
+    <a href={href} className="text-sm text-slate-600 transition hover:text-ink">
       {children}
     </a>
   );
@@ -1028,15 +996,7 @@ function Section({
   );
 }
 
-function SectionHeader({
-  eyebrow,
-  title,
-  sub,
-}: {
-  eyebrow: string;
-  title: string;
-  sub?: string;
-}) {
+function SectionHeader({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   return (
     <div className="mx-auto max-w-3xl text-center">
       <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">

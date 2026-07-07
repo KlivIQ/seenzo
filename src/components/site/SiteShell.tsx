@@ -80,8 +80,8 @@ function Footer() {
             <Logo />
             <p className="mt-4 text-sm font-semibold text-brand-ink">Get seen by AI.</p>
             <p className="mt-2 max-w-xs text-sm leading-relaxed text-slate-600">
-              Seenzo shows Indian businesses exactly how ChatGPT, Gemini,
-              Perplexity and Claude describe them — and how to get found.
+              Seenzo shows Indian businesses exactly how ChatGPT, Gemini, Perplexity and Claude
+              describe them — and how to get found.
             </p>
             <div className="mt-5 flex items-center gap-2">
               {socials.map(({ label, href, Icon }) => (
@@ -125,13 +125,11 @@ function Footer() {
 
         <div className="mt-12 border-t border-slate-200 pt-6">
           <p className="text-[11px] leading-relaxed text-slate-400">
-            Disclaimer: Seenzo provides general AI-visibility insights based on
-            public model behaviour at the time of scanning. Results are
-            indicative only and do not guarantee rankings, citations, traffic,
-            revenue, or any specific business outcomes across ChatGPT, Gemini,
-            Perplexity, Claude or any other AI system. AI models change
-            frequently and their responses can vary between users, regions and
-            sessions.
+            Disclaimer: Seenzo provides general AI-visibility insights based on public model
+            behaviour at the time of scanning. Results are indicative only and do not guarantee
+            rankings, citations, traffic, revenue, or any specific business outcomes across ChatGPT,
+            Gemini, Perplexity, Claude or any other AI system. AI models change frequently and their
+            responses can vary between users, regions and sessions.
           </p>
           <p className="mt-4 text-xs text-slate-500">
             © 2026 KlivIQ Technologies OPC Private Limited. All rights reserved.
@@ -145,9 +143,7 @@ function Footer() {
 function FooterCol({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-sm font-semibold tracking-wide text-ink uppercase">
-        {title}
-      </div>
+      <div className="text-sm font-semibold tracking-wide text-ink uppercase">{title}</div>
       <div className="mt-4 flex flex-col gap-2.5">{children}</div>
     </div>
   );
@@ -155,10 +151,7 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a
-      href={href}
-      className="text-sm text-slate-600 transition hover:text-ink"
-    >
+    <a href={href} className="text-sm text-slate-600 transition hover:text-ink">
       {children}
     </a>
   );

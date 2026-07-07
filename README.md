@@ -53,18 +53,18 @@ The application is a landing page + lead-capture experience that includes:
 
 ## Tech Stack
 
-| Layer | Technology |
-| --- | --- |
-| Framework | [TanStack Start](https://tanstack.com/start/) v1 + [TanStack Router](https://tanstack.com/router/) |
-| UI Library | React 19 |
-| Language | TypeScript 5 (strict mode) |
-| Styling | Tailwind CSS v4 + `tw-animate-css` |
-| Components | shadcn/ui + Radix UI primitives |
-| Forms | react-hook-form + Zod + `@hookform/resolvers` |
-| Icons | lucide-react |
-| Charts | recharts |
-| Build Tool | Vite 8 |
-| Lint / Format | ESLint 9 + Prettier 3 |
+| Layer         | Technology                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| Framework     | [TanStack Start](https://tanstack.com/start/) v1 + [TanStack Router](https://tanstack.com/router/) |
+| UI Library    | React 19                                                                                           |
+| Language      | TypeScript 5 (strict mode)                                                                         |
+| Styling       | Tailwind CSS v4 + `tw-animate-css`                                                                 |
+| Components    | shadcn/ui + Radix UI primitives                                                                    |
+| Forms         | react-hook-form + Zod + `@hookform/resolvers`                                                      |
+| Icons         | lucide-react                                                                                       |
+| Charts        | recharts                                                                                           |
+| Build Tool    | Vite 8                                                                                             |
+| Lint / Format | ESLint 9 + Prettier 3                                                                              |
 
 ### Server runtime
 
@@ -124,14 +124,14 @@ The dev server will start at `http://localhost:8080`.
 
 ## Available Scripts
 
-| Script | Command | Description |
-| --- | --- | --- |
-| Dev | `bun dev` | Start Vite development server |
-| Build | `bun run build` | Production build |
-| Build (dev) | `bun run build:dev` | Development build |
-| Preview | `bun run preview` | Preview the production build locally |
-| Lint | `bun run lint` | Run ESLint |
-| Format | `bun run format` | Format code with Prettier |
+| Script      | Command             | Description                          |
+| ----------- | ------------------- | ------------------------------------ |
+| Dev         | `bun dev`           | Start Vite development server        |
+| Build       | `bun run build`     | Production build                     |
+| Build (dev) | `bun run build:dev` | Development build                    |
+| Preview     | `bun run preview`   | Preview the production build locally |
+| Lint        | `bun run lint`      | Run ESLint                           |
+| Format      | `bun run format`    | Format code with Prettier            |
 
 ---
 

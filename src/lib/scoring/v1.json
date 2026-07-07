@@ -1,0 +1,56 @@
+{
+  "version": "v1",
+  "categories": [
+    { "id": "crawlability", "label": "Crawlability", "weight": 25 },
+    { "id": "structured_data", "label": "Structured Data", "weight": 20 },
+    { "id": "metadata", "label": "Metadata", "weight": 15 },
+    { "id": "content", "label": "Content", "weight": 15 },
+    { "id": "trust", "label": "Trust", "weight": 10 },
+    { "id": "india_presence", "label": "India Presence", "weight": 15 }
+  ],
+  "checks": {
+    "https": { "category": "crawlability", "weight": 5 },
+    "robots_exists": { "category": "crawlability", "weight": 3 },
+    "robots_ai_bots": { "category": "crawlability", "weight": 5 },
+    "sitemap_exists": { "category": "crawlability", "weight": 3 },
+    "sitemap_fresh": { "category": "crawlability", "weight": 3 },
+    "spa_detection": { "category": "crawlability", "weight": 4 },
+    "pagespeed_mobile": { "category": "crawlability", "weight": 2 },
+
+    "jsonld_present": { "category": "structured_data", "weight": 5 },
+    "org_schema": { "category": "structured_data", "weight": 4 },
+    "faq_schema": { "category": "structured_data", "weight": 4 },
+    "localbusiness_or_product": { "category": "structured_data", "weight": 4 },
+    "breadcrumb": { "category": "structured_data", "weight": 3 },
+
+    "title_unique": { "category": "metadata", "weight": 3 },
+    "title_length": { "category": "metadata", "weight": 3 },
+    "meta_desc": { "category": "metadata", "weight": 4 },
+    "canonical": { "category": "metadata", "weight": 3 },
+    "og_tags": { "category": "metadata", "weight": 2 },
+
+    "informational_pages": { "category": "content", "weight": 3 },
+    "blog_exists": { "category": "content", "weight": 3 },
+    "blog_fresh_90d": { "category": "content", "weight": 3 },
+    "heading_hierarchy": { "category": "content", "weight": 3 },
+    "author_attribution": { "category": "content", "weight": 3 },
+
+    "about_page": { "category": "trust", "weight": 3 },
+    "contact_visible": { "category": "trust", "weight": 3 },
+    "phone_email_visible": { "category": "trust", "weight": 2 },
+    "policies_present": { "category": "trust", "weight": 2 },
+
+    "google_business": { "category": "india_presence", "weight": 3 },
+    "directory_presence": { "category": "india_presence", "weight": 3 },
+    "linkedin_page": { "category": "india_presence", "weight": 3 },
+    "nap_consistency": { "category": "india_presence", "weight": 3 },
+    "gst_or_legal_identity": { "category": "india_presence", "weight": 3 }
+  },
+  "grades": [
+    { "grade": "A", "min": 85 },
+    { "grade": "B", "min": 70 },
+    { "grade": "C", "min": 55 },
+    { "grade": "D", "min": 40 },
+    { "grade": "F", "min": 0 }
+  ]
+}

@@ -9,12 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyRouteImport } from './routes/verify'
+import { Route as VerifiedRouteImport } from './routes/verified'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as RSlugRouteImport } from './routes/r.$slug'
+import { Route as ApiTrackRouteImport } from './routes/api/track'
+import { Route as ApiScanRequestRouteImport } from './routes/api/scan-request'
+import { Route as ApiInngestRouteImport } from './routes/api/inngest'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as ApiAdminLeadsRouteImport } from './routes/api/admin/leads'
 
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifiedRoute = VerifiedRouteImport.update({
+  id: '/verified',
+  path: '/verified',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -25,14 +42,14 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RSlugRoute = RSlugRouteImport.update({
@@ -40,47 +57,151 @@ const RSlugRoute = RSlugRouteImport.update({
   path: '/r/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTrackRoute = ApiTrackRouteImport.update({
+  id: '/api/track',
+  path: '/api/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiScanRequestRoute = ApiScanRequestRouteImport.update({
+  id: '/api/scan-request',
+  path: '/api/scan-request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInngestRoute = ApiInngestRouteImport.update({
+  id: '/api/inngest',
+  path: '/api/inngest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminLeadsRoute = ApiAdminLeadsRouteImport.update({
+  id: '/api/admin/leads',
+  path: '/api/admin/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/verified': typeof VerifiedRoute
+  '/verify': typeof VerifyRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/api/inngest': typeof ApiInngestRoute
+  '/api/scan-request': typeof ApiScanRequestRoute
+  '/api/track': typeof ApiTrackRoute
   '/r/$slug': typeof RSlugRoute
+  '/admin/': typeof AdminIndexRoute
+  '/api/admin/leads': typeof ApiAdminLeadsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/verified': typeof VerifiedRoute
+  '/verify': typeof VerifyRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/api/inngest': typeof ApiInngestRoute
+  '/api/scan-request': typeof ApiScanRequestRoute
+  '/api/track': typeof ApiTrackRoute
   '/r/$slug': typeof RSlugRoute
+  '/admin': typeof AdminIndexRoute
+  '/api/admin/leads': typeof ApiAdminLeadsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/verified': typeof VerifiedRoute
+  '/verify': typeof VerifyRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/api/inngest': typeof ApiInngestRoute
+  '/api/scan-request': typeof ApiScanRequestRoute
+  '/api/track': typeof ApiTrackRoute
   '/r/$slug': typeof RSlugRoute
+  '/admin/': typeof AdminIndexRoute
+  '/api/admin/leads': typeof ApiAdminLeadsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/privacy' | '/terms' | '/r/$slug'
+  fullPaths:
+    | '/'
+    | '/privacy'
+    | '/terms'
+    | '/verified'
+    | '/verify'
+    | '/admin/login'
+    | '/api/inngest'
+    | '/api/scan-request'
+    | '/api/track'
+    | '/r/$slug'
+    | '/admin/'
+    | '/api/admin/leads'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/privacy' | '/terms' | '/r/$slug'
-  id: '__root__' | '/' | '/admin' | '/privacy' | '/terms' | '/r/$slug'
+  to:
+    | '/'
+    | '/privacy'
+    | '/terms'
+    | '/verified'
+    | '/verify'
+    | '/admin/login'
+    | '/api/inngest'
+    | '/api/scan-request'
+    | '/api/track'
+    | '/r/$slug'
+    | '/admin'
+    | '/api/admin/leads'
+  id:
+    | '__root__'
+    | '/'
+    | '/privacy'
+    | '/terms'
+    | '/verified'
+    | '/verify'
+    | '/admin/login'
+    | '/api/inngest'
+    | '/api/scan-request'
+    | '/api/track'
+    | '/r/$slug'
+    | '/admin/'
+    | '/api/admin/leads'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  VerifiedRoute: typeof VerifiedRoute
+  VerifyRoute: typeof VerifyRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+  ApiInngestRoute: typeof ApiInngestRoute
+  ApiScanRequestRoute: typeof ApiScanRequestRoute
+  ApiTrackRoute: typeof ApiTrackRoute
   RSlugRoute: typeof RSlugRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  ApiAdminLeadsRoute: typeof ApiAdminLeadsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verified': {
+      id: '/verified'
+      path: '/verified'
+      fullPath: '/verified'
+      preLoaderRoute: typeof VerifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -95,18 +216,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/r/$slug': {
@@ -116,16 +237,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/track': {
+      id: '/api/track'
+      path: '/api/track'
+      fullPath: '/api/track'
+      preLoaderRoute: typeof ApiTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/scan-request': {
+      id: '/api/scan-request'
+      path: '/api/scan-request'
+      fullPath: '/api/scan-request'
+      preLoaderRoute: typeof ApiScanRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/inngest': {
+      id: '/api/inngest'
+      path: '/api/inngest'
+      fullPath: '/api/inngest'
+      preLoaderRoute: typeof ApiInngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/leads': {
+      id: '/api/admin/leads'
+      path: '/api/admin/leads'
+      fullPath: '/api/admin/leads'
+      preLoaderRoute: typeof ApiAdminLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  VerifiedRoute: VerifiedRoute,
+  VerifyRoute: VerifyRoute,
+  AdminLoginRoute: AdminLoginRoute,
+  ApiInngestRoute: ApiInngestRoute,
+  ApiScanRequestRoute: ApiScanRequestRoute,
+  ApiTrackRoute: ApiTrackRoute,
   RSlugRoute: RSlugRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  ApiAdminLeadsRoute: ApiAdminLeadsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
