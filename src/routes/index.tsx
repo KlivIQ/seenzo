@@ -840,7 +840,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 /* ---------- Final CTA ---------- */
 function FinalCTA() {
   return (
-    <Section id="scan">
+    <Section id="scan-cta">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
