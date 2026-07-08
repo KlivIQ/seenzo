@@ -10,7 +10,6 @@ import {
   Globe2,
   MessageCircle,
   ShieldCheck,
-  Zap,
   BarChart3,
   Target,
   Languages,
@@ -55,7 +54,6 @@ function Index() {
       <WhyIndia />
       <Testimonials />
       <FAQ />
-      <FinalCTA />
       <Footer />
     </main>
   );
@@ -99,13 +97,6 @@ function NavBar() {
             </a>
           ))}
         </nav>
-        <a
-          href="#scan"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
-          Free Scan
-          <ArrowRight className="h-3.5 w-3.5" />
-        </a>
       </div>
     </header>
   );
@@ -842,42 +833,6 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-/* ---------- Final CTA ---------- */
-function FinalCTA() {
-  return (
-    <Section id="scan-cta">
-      <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
-            <Zap className="h-3.5 w-3.5" />
-            Free · No credit card
-          </div>
-          <h2 className="mt-5 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
-            See how AI sees you — <span className="text-brand">today.</span>
-          </h2>
-          <p className="mt-4 max-w-lg text-lg text-slate-600">
-            Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix list.
-            Delivered by email and WhatsApp in minutes.
-          </p>
-          <ul className="mt-6 space-y-2.5 text-sm text-slate-700">
-            {[
-              "Scans ChatGPT, Gemini, Perplexity, Claude",
-              "India-specific directory & GST checks",
-              "Plain-English fix list you can act on this week",
-            ].map((t) => (
-              <li key={t} className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-brand" />
-                {t}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <ScanForm />
-      </div>
-    </Section>
-  );
-}
-
 /* ---------- Footer ---------- */
 function Footer() {
   const quickLinks: Array<[string, string]> = [
@@ -946,6 +901,14 @@ function Footer() {
             <p className="text-sm leading-relaxed text-slate-600">
               KlivIQ Technologies OPC Private Limited
             </p>
+            <a
+              href="https://www.kliviq.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-slate-600 transition hover:text-ink"
+            >
+              www.kliviq.com
+            </a>
             <p className="mt-2 text-sm text-slate-500">India</p>
           </FooterCol>
         </div>
