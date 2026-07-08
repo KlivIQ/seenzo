@@ -3,5 +3,3 @@ export function requireEnv(name: string): string {
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
 }
-
-requireEnv("INNGEST_SIGNING_KEY");

@@ -10,6 +10,7 @@ export function getInngest(): Inngest {
     client = new Inngest({
       id: "seenzo",
       eventKey: requireEnv("INNGEST_EVENT_KEY"),
+      signingKey: requireEnv("INNGEST_SIGNING_KEY"),
     });
   }
   return client;
