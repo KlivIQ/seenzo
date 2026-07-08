@@ -135,22 +135,22 @@ function Hero() {
             See how <span className="text-brand">AI</span> sees
             <br /> your business.
           </h1>
-          <p className="mt-4 text-sm text-slate-500">
-            Built by KlivIQ Technologies · 20+ years enterprise IT ·{" "}
-            <a
-              href="https://kliviq.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-brand-ink underline underline-offset-4 hover:text-ink"
-            >
-              kliviq.com
-            </a>
-          </p>
           <p className="mt-6 max-w-xl text-lg text-slate-600">
-            ChatGPT, Gemini, Perplexity and Claude already answer questions about your industry
-            every day. Seenzo shows you exactly what they say about you — and what to fix to get
-            found.
+            Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix list.
+            Delivered by email in minutes.
           </p>
+          <ul className="mt-6 flex flex-col gap-3 text-base text-slate-600">
+            {[
+              "Scans ChatGPT, Gemini, Perplexity, Claude",
+              "India-specific directory & GST checks",
+              "Plain-English fix list you can act on this week",
+            ].map((t) => (
+              <li key={t} className="inline-flex items-start gap-2">
+                <Check className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                {t}
+              </li>
+            ))}
+          </ul>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
