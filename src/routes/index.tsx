@@ -154,17 +154,22 @@ function Hero() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
-              href="#scan"
-              className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Get my free AI Visibility Report
-              <ArrowRight className="h-4 w-4" />
-            </a>
-            <a
               href="#how"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-ink transition hover:border-slate-300"
             >
               See how it works
+            </a>
+            <a
+              href="#sample"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-ink transition hover:border-slate-300"
+            >
+              Sample report
+            </a>
+            <a
+              href="#benefits"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-ink transition hover:border-slate-300"
+            >
+              Benefits
             </a>
           </div>
 
