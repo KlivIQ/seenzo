@@ -117,7 +117,7 @@ function Hero() {
     <section id="top" className="relative overflow-hidden">
       <BackgroundGrid />
       <div className="relative mx-auto grid max-w-6xl gap-14 px-5 pt-16 pb-24 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-24 lg:pb-32">
-        <div className="rise-in">
+        <div className="rise-in order-2 lg:order-1">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
               <Sparkles className="h-3.5 w-3.5" />
@@ -180,8 +180,8 @@ function Hero() {
           </ul>
         </div>
 
-        <div className="rise-in [animation-delay:120ms]">
-          <HeroReportCard />
+        <div id="scan" className="rise-in order-1 lg:order-2 [animation-delay:120ms] scroll-mt-24">
+          <ScanForm />
         </div>
       </div>
     </section>
@@ -840,7 +840,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 /* ---------- Final CTA ---------- */
 function FinalCTA() {
   return (
-    <Section id="scan">
+    <Section id="scan-cta">
       <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
