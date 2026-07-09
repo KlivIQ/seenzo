@@ -31,12 +31,13 @@ export function getEmailRateLimiter(): Ratelimit {
 
 let ipLimiter: Ratelimit | undefined;
 
-/** Allows up to 3 scan requests per IP address per day. */
+// Raised from 3 to 10 for launch-week testing — drop back to 3 after soft launch.
+/** Allows up to 10 scan requests per IP address per day. */
 export function getIpRateLimiter(): Ratelimit {
   if (!ipLimiter) {
     ipLimiter = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.fixedWindow(3, "1 d"),
+      limiter: Ratelimit.fixedWindow(10, "1 d"),
       prefix: "seenzo:ratelimit:ip",
     });
   }
