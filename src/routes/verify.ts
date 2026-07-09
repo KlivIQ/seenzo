@@ -80,6 +80,8 @@ export const Route = createFileRoute("/verify")({
           .maybeSingle();
 
         if (!lead) return expiredLinkPage();
+        // TEMP DEBUG — remove once verify-flow failures are confirmed gone.
+        console.log("[verify] token found", { leadId: lead.id });
 
         // Fire the scan pipeline and confirm the DB write before touching the
         // token. If either step throws, we fall through to the catch below
@@ -91,8 +93,11 @@ export const Route = createFileRoute("/verify")({
             leadName: lead.name,
             businessName: lead.business_name,
           };
+          console.log("[verify] sending scan/requested to inngest", { leadId: lead.id });
           await getInngest().send({ name: "scan/requested", data: eventData });
+          console.log("[verify] inngest send succeeded", { leadId: lead.id });
 
+          console.log("[verify] updating lead status to verified", { leadId: lead.id });
           const { error: updateError } = await supabase
             .from("leads")
             .update({ status: "verified", verify_token: null, verify_expires: null })
@@ -100,6 +105,7 @@ export const Route = createFileRoute("/verify")({
           if (updateError) {
             throw new Error(`Failed to mark lead verified: ${updateError.message}`);
           }
+          console.log("[verify] lead marked verified", { leadId: lead.id });
         } catch (error) {
           console.error("verify failed", error);
           return retryLinkPage(url.toString());
