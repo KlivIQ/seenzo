@@ -56,6 +56,26 @@ async function findCachedReportSlug(websiteUrl: string): Promise<string | null> 
   return scan?.report_slug ?? null;
 }
 
+// A lead stuck as 'unverified' with an expired token is dead weight — the
+// original verify link can never succeed. Clear it so the email can submit
+// fresh rather than being blocked by the 1-scan-per-30-days email limiter.
+async function clearStaleUnverifiedLead(email: string): Promise<boolean> {
+  const supabase = getSupabaseServer();
+  const { data: stale } = await supabase
+    .from("leads")
+    .select("id")
+    .ilike("email", email)
+    .eq("status", "unverified")
+    .lt("verify_expires", new Date().toISOString())
+    .maybeSingle();
+
+  if (!stale) return false;
+
+  const { error } = await supabase.from("leads").delete().eq("id", stale.id);
+  if (error) throw new Error(`Failed to clear stale lead: ${error.message}`);
+  return true;
+}
+
 async function sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
   const resend = getResend();
   const verifyUrl = `https://www.seenzo.in/verify?token=${token}`;
@@ -100,8 +120,15 @@ export async function handleScanRequest(
     }
     const { name, business, email, phone, website } = parsed.data;
 
+    // A stale unverified lead means the email limiter's prior "success" is
+    // meaningless (that request can never complete) — bypass it for this
+    // submission only. The IP limiter still applies.
+    const staleLeadCleared = await clearStaleUnverifiedLead(email);
+
     const [emailLimit, ipLimit] = await Promise.all([
-      getEmailRateLimiter().limit(email.toLowerCase()),
+      staleLeadCleared
+        ? Promise.resolve({ success: true } as const)
+        : getEmailRateLimiter().limit(email.toLowerCase()),
       getIpRateLimiter().limit(clientIp),
     ]);
 
