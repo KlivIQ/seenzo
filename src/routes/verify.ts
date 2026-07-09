@@ -32,9 +32,11 @@ function expiredLinkPage(): Response {
   );
 }
 
-// verify_token/verify_expires must not be cleared until this page is shown —
-// clearing them earlier and then failing (e.g. Inngest send) would burn the
-// token on a request the user never saw succeed, with no way to retry.
+// verify_token/verify_expires must not be cleared until we know the DB
+// write itself succeeded — clearing them and then failing to persist
+// "verified" would burn the token on a request that never actually
+// completed, with no way to retry. The Inngest send no longer gates this
+// page: it fires after the redirect and can't be the reason we land here.
 function retryLinkPage(retryUrl: string): Response {
   return new Response(
     `<!doctype html>
@@ -83,33 +85,40 @@ export const Route = createFileRoute("/verify")({
         // TEMP DEBUG — remove once verify-flow failures are confirmed gone.
         console.log("[verify] token found", { leadId: lead.id });
 
-        // Fire the scan pipeline and confirm the DB write before touching the
-        // token. If either step throws, we fall through to the catch below
-        // and the token is left untouched so the same link can be retried.
-        try {
-          const eventData: ScanRequestedEventData = {
-            leadId: lead.id,
-            websiteUrl: lead.website_url,
-            leadName: lead.name,
-            businessName: lead.business_name,
-          };
-          console.log("[verify] sending scan/requested to inngest", { leadId: lead.id });
-          await getInngest().send({ name: "scan/requested", data: eventData });
-          console.log("[verify] inngest send succeeded", { leadId: lead.id });
-
-          console.log("[verify] updating lead status to verified", { leadId: lead.id });
-          const { error: updateError } = await supabase
-            .from("leads")
-            .update({ status: "verified", verify_token: null, verify_expires: null })
-            .eq("id", lead.id);
-          if (updateError) {
-            throw new Error(`Failed to mark lead verified: ${updateError.message}`);
-          }
-          console.log("[verify] lead marked verified", { leadId: lead.id });
-        } catch (error) {
-          console.error("verify failed", error);
+        // Mark the lead verified FIRST and redirect immediately — the user's
+        // success page must never wait on, or fail because of, Inngest. Only
+        // a failure to persist "verified" leaves the token intact for retry.
+        const { error: updateError } = await supabase
+          .from("leads")
+          .update({ status: "verified", verify_token: null, verify_expires: null })
+          .eq("id", lead.id);
+        if (updateError) {
+          console.error(
+            "verify failed",
+            new Error(`Failed to mark lead verified: ${updateError.message}`),
+          );
           return retryLinkPage(url.toString());
         }
+        console.log("[verify] lead marked verified", { leadId: lead.id });
+
+        // Fire the scan pipeline in the background, after the DB write is
+        // confirmed. Deliberately not awaited: the redirect below must not
+        // wait on Inngest, and a failed send must not turn a successfully
+        // verified lead into an error page. If this fails, the lead is
+        // still verified and the scan can be retried manually from admin.
+        const eventData: ScanRequestedEventData = {
+          leadId: lead.id,
+          websiteUrl: lead.website_url,
+          leadName: lead.name,
+          businessName: lead.business_name,
+        };
+        console.log("[verify] sending scan/requested to inngest (background)", { leadId: lead.id });
+        getInngest()
+          .send({ name: "scan/requested", data: eventData })
+          .then(() => console.log("[verify] inngest send succeeded", { leadId: lead.id }))
+          .catch((error: unknown) =>
+            console.error("[verify] inngest send failed (background)", error),
+          );
 
         return new Response(null, { status: 302, headers: { Location: "/verified" } });
       },
