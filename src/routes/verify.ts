@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { waitUntil } from "@vercel/functions";
 
 import { getInngest } from "@/lib/inngest/client";
 import type { ScanRequestedEventData } from "@/lib/inngest/events";
@@ -106,6 +107,10 @@ export const Route = createFileRoute("/verify")({
         // wait on Inngest, and a failed send must not turn a successfully
         // verified lead into an error page. If this fails, the lead is
         // still verified and the scan can be retried manually from admin.
+        // waitUntil keeps the serverless function alive until the send
+        // settles, since Vercel freezes the function as soon as the redirect
+        // response returns and an un-awaited promise would otherwise never
+        // complete.
         const eventData: ScanRequestedEventData = {
           leadId: lead.id,
           websiteUrl: lead.website_url,
@@ -113,12 +118,14 @@ export const Route = createFileRoute("/verify")({
           businessName: lead.business_name,
         };
         console.log("[verify] sending scan/requested to inngest (background)", { leadId: lead.id });
-        getInngest()
-          .send({ name: "scan/requested", data: eventData })
-          .then(() => console.log("[verify] inngest send succeeded", { leadId: lead.id }))
-          .catch((error: unknown) =>
-            console.error("[verify] inngest send failed (background)", error),
-          );
+        waitUntil(
+          getInngest()
+            .send({ name: "scan/requested", data: eventData })
+            .then(() => console.log("[verify] inngest send succeeded", { leadId: lead.id }))
+            .catch((error: unknown) =>
+              console.error("[verify] inngest send failed (background)", error),
+            ),
+        );
 
         return new Response(null, { status: 302, headers: { Location: "/verified" } });
       },
