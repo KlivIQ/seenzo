@@ -7,6 +7,8 @@ Seenzo helps Indian businesses get discovered inside generative AI answer engine
 ## Core pages
 
 - [Home](/): Product overview, hero scan form, how it works, benefits, sample report, FAQ.
+- [FAQ](/faq): Common questions about AI search, GEO vs AEO vs SEO, and the Seenzo Visibility Report.
+- [Glossary](/glossary): Plain-English definitions of AI search, GEO, AEO, LLM, RAG, llms.txt, schema markup and related terms for Indian startups and small businesses.
 - [Privacy Policy](/privacy): DPDP Act 2023 compliant policy — data collected, purpose, India-region storage, 7-day deletion on request.
 - [Terms of Service](/terms): Free-scan terms, public-data sourcing, contact consent (email + WhatsApp), STOP opt-out.
 
