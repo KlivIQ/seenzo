@@ -119,6 +119,7 @@ function Footer() {
           </FooterCol>
 
           <FooterCol title="Company">
+            <FooterLink href="/about">About</FooterLink>
             <p className="text-sm leading-relaxed text-slate-600">
               KlivIQ Technologies OPC Private Limited
             </p>
