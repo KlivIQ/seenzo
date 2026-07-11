@@ -91,6 +91,7 @@ function NavBar() {
             ["Benefits", "#benefits"],
             ["Features", "#features"],
             ["FAQ", "#faq"],
+            ["Contact", "#contact"],
           ].map(([label, href]) => (
             <a
               key={href}
@@ -917,7 +918,7 @@ function Footer() {
   const legalLinks: Array<[string, string]> = [
     ["Terms & Conditions", "/terms"],
     ["Privacy Policy", "/privacy"],
-    ["Contact", "#"],
+    ["Contact", "#contact"],
   ];
   const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
     { label: "Facebook", href: "https://facebook.com/seenzo", Icon: Facebook },
