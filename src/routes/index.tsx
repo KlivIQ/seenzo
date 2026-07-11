@@ -91,6 +91,7 @@ function NavBar() {
             ["Benefits", "#benefits"],
             ["Features", "#features"],
             ["FAQ", "#faq"],
+            ["Blog", "/blog"],
             ["Contact", "#contact"],
           ].map(([label, href]) => (
             <a
@@ -921,6 +922,7 @@ function Footer() {
     ["FAQ", "#faq"],
     ["All FAQs", "/faq"],
     ["Glossary", "/glossary"],
+    ["Blog", "/blog"],
     ["Request scan", "#scan"],
   ];
   const legalLinks: Array<[string, string]> = [
@@ -989,7 +991,13 @@ function Footer() {
             >
               www.kliviq.com
             </a>
-            <p className="mt-2 text-sm text-slate-500">India</p>
+            <p className="mt-2 text-sm text-slate-500">Chennai, India</p>
+            <a
+              href="tel:+919069026969"
+              className="mt-2 text-sm font-medium text-brand-ink transition hover:text-ink"
+            >
+              +91 90690 26969
+            </a>
           </FooterCol>
         </div>
 
