@@ -1,58 +1,32 @@
-## Add /faq and /glossary pages (keep FAQ on homepage)
+## Two fixes
 
-### 1. Extract FAQ data
-Create `src/lib/faq-data.ts` exporting a shared `faqs` array (question + answer). Add one new item:
-- **"What's the difference between SEO, GEO and AEO?"** — plain-English answer: SEO = ranking on Google's blue links; GEO (Generative Engine Optimization) = getting cited inside ChatGPT/Gemini/Perplexity/Claude answers; AEO (Answer Engine Optimization) = structuring content so answer engines (voice assistants, featured snippets, AI overviews) can extract direct answers. Note Seenzo focuses on GEO + AEO for Indian businesses.
+### 1. Resubmit the correct URL in Search Console
+- Remove `https://www.seenzo.in/public/sitemap.xml`
+- Add `https://www.seenzo.in/sitemap.xml`
 
-### 2. Update homepage FAQ section
-In `src/routes/index.tsx`, replace the inline FAQ array with an import from `faq-data.ts`. Section stays visually identical. Add a small "View all FAQs →" link under the section pointing to `/faq`.
+(`/public` is the Vite source folder — files there are served from the site root, so `public/sitemap.xml` → `/sitemap.xml`.)
 
-### 3. Create `/faq` page (`src/routes/faq.tsx`)
-- Uses `SiteShell` for header/footer consistency.
-- `head()` with unique title "FAQ — Seenzo AI Visibility", meta description, og tags.
-- Renders the same `faqs` array as accessible accordion (`<details>`), grouped visually with intro copy.
-- JSON-LD `FAQPage` schema for SEO/AI ingestion.
+### 2. Fix `public/sitemap.xml` to use absolute URLs
 
-### 4. Create `/glossary` page (`src/routes/glossary.tsx`)
-- Uses `SiteShell`.
-- `head()`: title "AI Search Glossary for Indian Startups & SMBs — Seenzo", meta description targeting "AI search, GEO, AEO, SEO, LLM optimization, ChatGPT SEO India".
-- Intro paragraph: "Plain-English definitions of the terms Indian founders and small business owners need when starting with AI search and visibility."
-- Alphabetical `<dl>` list of ~20–25 terms, each with an H2/`<dt>` (term) and 2–4 sentence `<dd>` (definition) that naturally uses target phrases. Terms to include:
-  - AEO (Answer Engine Optimization)
-  - AI Overviews (Google SGE)
-  - AI Visibility Score
-  - Anthropic Claude
-  - Bing Copilot
-  - ChatGPT Search
-  - Citation (in AI answers)
-  - Crawlability
-  - DPDP Act 2023
-  - Entity SEO
-  - Featured Snippet
-  - Gemini (Google)
-  - Generative AI
-  - GEO (Generative Engine Optimization)
-  - GST (as a trust signal)
-  - Hallucination
-  - Knowledge Graph
-  - LLM (Large Language Model)
-  - LLMs.txt
-  - Local SEO (India)
-  - Perplexity
-  - Prompt
-  - RAG (Retrieval-Augmented Generation)
-  - Schema Markup / Structured Data
-  - SEO (Search Engine Optimization)
-  - Zero-Click Search
-- JSON-LD `DefinedTermSet` schema listing each term, so AI crawlers and Google can ingest definitions.
-- Internal link to `/` and `/faq` in a closing "See how your business scores" CTA.
+Sitemaps require full `https://…` URLs in every `<loc>`. Update the file to:
 
-### 5. Wire up navigation & discoverability
-- Add `Glossary` and `FAQ` links to the footer "Resources" / "Company" column in `src/routes/index.tsx`, `privacy.tsx`, `terms.tsx` (wherever the footer lives — likely `SiteShell`).
-- Update `public/sitemap.xml` to add `/faq` and `/glossary`.
-- Update `public/llms.txt` to list both new pages under Core pages.
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.seenzo.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.seenzo.in/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.seenzo.in/glossary</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.seenzo.in/privacy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.seenzo.in/terms</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+</urlset>
+```
 
-### Out of scope
-- No design/layout changes to existing pages beyond adding two footer links and the "View all FAQs" link.
-- No changes to the homepage FAQ visual style.
-- No backend or form changes.
+Also add a `Sitemap:` line to `public/robots.txt`:
+
+```
+Sitemap: https://www.seenzo.in/sitemap.xml
+```
+
+After publishing, click "Rescan" in Search Console — status should flip to Success.
+
+Confirm `https://www.seenzo.in` (with `www`) is your canonical domain — if you actually use the apex `https://seenzo.in`, I'll use that instead.
