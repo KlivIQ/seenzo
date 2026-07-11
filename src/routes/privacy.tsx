@@ -25,6 +25,19 @@ export const Route = createFileRoute("/privacy")({
           "Seenzo Privacy Policy. Learn what data we collect, how we use it, where it is stored and how to request deletion.",
       },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://www.seenzo.in/" },
+            { "@type": "ListItem", position: 2, name: "Privacy Policy", item: "https://www.seenzo.in/privacy" },
+          ],
+        }),
+      },
+    ],
   }),
 });
 
