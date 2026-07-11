@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { ScanForm } from "@/components/site/ScanForm";
+import { faqs } from "@/lib/faq-data";
 
 export const Route = createFileRoute("/")({
   component: Index,
