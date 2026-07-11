@@ -34,3 +34,5 @@ Allow: /
 
 User-agent: Applebot-Extended
 Allow: /
+
+Sitemap: https://www.seenzo.in/sitemap.xml

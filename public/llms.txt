@@ -1,0 +1,30 @@
+# Seenzo
+
+> Seenzo is India's AI Visibility platform. It scans how ChatGPT, Gemini, Perplexity and Claude describe a business and delivers a free AI Visibility Report with a prioritised, plain-English fix list. Built by KlivIQ Technologies OPC Private Limited.
+
+Seenzo helps Indian businesses get discovered inside generative AI answer engines (GEO / AEO). A scan produces an AI Visibility Score (0–100), an engine-by-engine breakdown across ChatGPT, Gemini, Perplexity and Claude, six category scores (Crawlability, Structured Data, Metadata, Content Quality, India Presence, Trust), India-specific directory and GST checks, and a prioritised fix list the business can act on the same week. Reports are delivered by email after email verification.
+
+## Core pages
+
+- [Home](/): Product overview, hero scan form, how it works, benefits, sample report, FAQ.
+- [FAQ](/faq): Common questions about AI search, GEO vs AEO vs SEO, and the Seenzo Visibility Report.
+- [Glossary](/glossary): Plain-English definitions of AI search, GEO, AEO, LLM, RAG, llms.txt, schema markup and related terms for Indian startups and small businesses.
+- [Privacy Policy](/privacy): DPDP Act 2023 compliant policy — data collected, purpose, India-region storage, 7-day deletion on request.
+- [Terms of Service](/terms): Free-scan terms, public-data sourcing, contact consent (email + WhatsApp), STOP opt-out.
+
+## Reports
+
+- [Sample report](/r/anand-sweets-abc123): Example AI Visibility Report showing score dial, category bars, priority fixes and projected score.
+
+## About
+
+- Product: Seenzo (seenzo.in)
+- Company: KlivIQ Technologies OPC Private Limited (kliviq.com)
+- Region: India (ap-south-1)
+- Contact: hello@kliviq.com
+
+## Optional
+
+- [Sitemap](/sitemap.xml)
+- [Robots](/robots.txt)
+- [Humans](/humans.txt)

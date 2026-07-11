@@ -1,0 +1,27 @@
+{
+  "name": "Seenzo - Get Seen By AI",
+  "short_name": "Seenzo",
+  "description": "India's AI Visibility platform. See how ChatGPT, Gemini, Perplexity and Claude describe your business.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#10B981",
+  "lang": "en-IN",
+  "categories": ["business", "productivity", "marketing"],
+  "icons": [
+    {
+      "src": "/logo/seenzo-icon-light.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

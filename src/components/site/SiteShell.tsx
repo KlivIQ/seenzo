@@ -59,6 +59,8 @@ function Footer() {
     ["Benefits", "/#benefits"],
     ["Features", "/#features"],
     ["FAQ", "/#faq"],
+    ["All FAQs", "/faq"],
+    ["Glossary", "/glossary"],
     ["Request scan", "/#scan"],
   ];
   const legalLinks: Array<[string, string]> = [

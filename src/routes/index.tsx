@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { ScanForm } from "@/components/site/ScanForm";
+import { faqs } from "@/lib/faq-data";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -775,39 +776,21 @@ function Testimonials() {
 
 /* ---------- FAQ ---------- */
 function FAQ() {
-  const items = [
-    {
-      q: "Is the AI Visibility Report really free?",
-      a: "Yes. One free scan per business — you get the full Visibility Score, breakdown across engines, and prioritised fix list. No credit card, no trial that expires.",
-    },
-    {
-      q: "How long does the scan take?",
-      a: "Most reports are delivered within 3–5 minutes. Larger sites can take up to 10 minutes. You'll get a WhatsApp message as soon as it's ready.",
-    },
-    {
-      q: "Do you sign 12-month contracts?",
-      a: "Never. Scans are free. Any paid follow-up work is engagement-based — you pay for outcomes, not a year of promises.",
-    },
-    {
-      q: "Which AI engines do you scan?",
-      a: "ChatGPT, Google Gemini, Perplexity, Anthropic Claude and Google AI Overviews. We add new engines as they gain meaningful buyer share in India.",
-    },
-    {
-      q: "What happens to my data?",
-      a: "Data is stored in India and handled per the DPDP Act. We never sell or share your data. Ask us to delete it anytime and it's gone within 7 business days.",
-    },
-    {
-      q: "Do you offer fixes, or just the report?",
-      a: "Both. The free report tells you what to fix. If you'd like our team to fix it for you, we quote per project — no retainers.",
-    },
-  ];
   return (
     <Section id="faq" className="bg-slate-50/60">
       <SectionHeader eyebrow="FAQ" title="Questions, answered." />
       <div className="mx-auto mt-12 max-w-3xl divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white">
-        {items.map((it, i) => (
+        {faqs.map((it, i) => (
           <FAQItem key={i} q={it.q} a={it.a} />
         ))}
+      </div>
+      <div className="mx-auto mt-6 max-w-3xl text-center">
+        <a
+          href="/faq"
+          className="text-sm font-semibold text-brand-ink transition hover:underline"
+        >
+          View all FAQs →
+        </a>
       </div>
     </Section>
   );
@@ -841,6 +824,8 @@ function Footer() {
     ["Benefits", "#benefits"],
     ["Features", "#features"],
     ["FAQ", "#faq"],
+    ["All FAQs", "/faq"],
+    ["Glossary", "/glossary"],
     ["Request scan", "#scan"],
   ];
   const legalLinks: Array<[string, string]> = [
