@@ -1,10 +1,10 @@
 import { nanoid } from "nanoid";
 
+import { renderVerifyEmail } from "@/lib/email/verify-email";
 import { scanSchema } from "@/lib/scan-schema";
 import { getSupabaseServer } from "@/lib/supabase";
 
 import { requireEnv } from "./env";
-import { escapeHtml } from "./html-escape";
 import { getEmailRateLimiter, getIpRateLimiter } from "./rate-limit";
 import { getResend } from "./resend";
 
@@ -76,7 +76,12 @@ async function clearStaleUnverifiedLead(email: string): Promise<boolean> {
   return true;
 }
 
-async function sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
+async function sendVerificationEmail(
+  to: string,
+  name: string,
+  websiteUrl: string,
+  token: string,
+): Promise<void> {
   const resend = getResend();
   const verifyUrl = `https://www.seenzo.in/verify?token=${token}`;
 
@@ -84,19 +89,7 @@ async function sendVerificationEmail(to: string, name: string, token: string): P
     from: SENDER_EMAIL,
     to,
     subject: "Confirm your Seenzo scan",
-    html: `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <p>Hi ${escapeHtml(name)},</p>
-        <p>Thanks for requesting a free Seenzo AI Visibility scan. Please confirm your email to start the scan:</p>
-        <p style="margin: 24px 0;">
-          <a href="${verifyUrl}" style="background:#10B981;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">
-            Confirm my scan
-          </a>
-        </p>
-        <p>Or paste this link into your browser:<br />${verifyUrl}</p>
-        <p>This link expires in 48 hours.</p>
-      </div>
-    `,
+    html: await renderVerifyEmail({ name, websiteUrl, verifyUrl }),
   });
 
   if (error) throw new Error(`Resend error: ${error.message}`);
@@ -175,7 +168,7 @@ export async function handleScanRequest(
       };
     }
 
-    await sendVerificationEmail(email, name, token);
+    await sendVerificationEmail(email, name, website, token);
 
     return { success: true, message: "Check your email to confirm your scan" };
   } catch (error) {

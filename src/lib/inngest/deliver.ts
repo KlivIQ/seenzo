@@ -1,48 +1,13 @@
-import { computePriorityFixes, type PriorityFix } from "@/lib/scoring/fixes";
-import { escapeHtml } from "@/lib/server/html-escape";
+import { renderReportEmail } from "@/lib/email/report-email";
+import { computePriorityFixes } from "@/lib/scoring/fixes";
 import { getResend } from "@/lib/server/resend";
 import { getSupabaseServer } from "@/lib/supabase";
-import type { ScanGrade } from "@/lib/types/database";
 
 import { getInngest } from "./client";
 import type { FollowupStartEventData, ReportReadyEventData } from "./events";
 
 const SENDER_EMAIL = "reports@seenzo.in";
 const REPORT_BASE_URL = "https://www.seenzo.in/r";
-
-function renderReportEmailHtml(opts: {
-  name: string;
-  score: number;
-  grade: ScanGrade;
-  fixes: PriorityFix[];
-  reportUrl: string;
-}): string {
-  const { name, score, grade, fixes, reportUrl } = opts;
-  const fixItems = fixes
-    .map(
-      (f) => `<li style="margin-bottom:8px;">${escapeHtml(f.title)} — ${escapeHtml(f.desc)}</li>`,
-    )
-    .join("");
-
-  return `
-    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <p>Hi ${escapeHtml(name)},</p>
-      <p>Your Seenzo AI Visibility scan is complete. Here's how AI engines like ChatGPT, Gemini and Perplexity currently see your business:</p>
-      <p style="margin:24px 0; text-align:center;">
-        <span style="display:inline-block; font-size:40px; font-weight:800; color:#111;">${score}</span>
-        <span style="display:inline-block; margin-left:8px; padding:4px 10px; border-radius:6px; background:#F59E0B; color:#111; font-weight:700;">Grade ${escapeHtml(grade)}</span>
-      </p>
-      <p><strong>Your top ${fixes.length} fixes:</strong></p>
-      <ol>${fixItems}</ol>
-      <p style="margin: 24px 0;">
-        <a href="${reportUrl}" style="background:#10B981;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">
-          Book free consultation
-        </a>
-      </p>
-      <p>Or view your full report:<br />${reportUrl}</p>
-    </div>
-  `;
-}
 
 export const deliverReport = getInngest().createFunction(
   { id: "deliver-report", triggers: [{ event: "report/ready" }] },
@@ -54,7 +19,7 @@ export const deliverReport = getInngest().createFunction(
 
       const { data: lead, error: leadError } = await supabase
         .from("leads")
-        .select("name, email")
+        .select("name, email, business_name")
         .eq("id", leadId)
         .single();
       if (leadError || !lead)
@@ -85,8 +50,9 @@ export const deliverReport = getInngest().createFunction(
         from: SENDER_EMAIL,
         to: lead.email,
         subject: "Your Seenzo AI Visibility Score is ready",
-        html: renderReportEmailHtml({
+        html: await renderReportEmail({
           name: lead.name,
+          businessName: lead.business_name,
           score: scan.score ?? 0,
           grade: scan.grade ?? "F",
           fixes,
