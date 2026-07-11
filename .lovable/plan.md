@@ -1,33 +1,48 @@
-## Plan: Add a contact section to the Seenzo landing page
+## SEO visibility fixes
 
-### What we’ll do
-Add a new, self-contained **Contact** section at the bottom of the homepage (after the FAQ section and before the existing footer). No other sections, components, or pages will be changed.
+### 1. LocalBusiness schema (sitewide)
+Edit `src/routes/__root.tsx` — append a `LocalBusiness` node to the existing `@graph` JSON-LD block, using the exact fields you provided (Chennai, TN, IN, +919840497937, hello@kliviq.com).
 
-### Scope
-- **Only file changed:** `src/routes/index.tsx`
-- **No changes to:** `SiteShell.tsx`, `ScanForm.tsx`, `styles.css`, any other routes, or any other files.
+### 2. BreadcrumbList schema (per page)
+Add a `BreadcrumbList` JSON-LD `scripts` entry to each leaf route's `head()`:
+- `/about`, `/faq`, `/glossary`, `/privacy`, `/terms`, `/blog`, `/blog/what-is-ai-visibility`
+- Homepage `/` gets a single-item Home breadcrumb.
+Each breadcrumb uses absolute `https://www.seenzo.in/...` URLs.
 
-### Section design
-- Insert `<Contact />` between `<FAQ />` and `<Footer />` in the main `Index` component.
-- Use the existing `Section` primitive so padding, width, and font behavior stay consistent with the rest of the page.
-- The contact card itself will be highlighted with the brand emerald / "zo" color from the Seenzo logo (`bg-brand`) and white text.
-- Add `id="contact"` so the section can be linked directly if needed later.
+### 3. Visible phone number in footer
+Edit `src/components/site/SiteShell.tsx` — under the **Company** column, add a `tel:+919069026969` link showing `+91 90690 26969` (WhatsApp) below the India line. Also add it to the homepage footer in `src/routes/index.tsx` for consistency.
 
-### Contact card content
-| Item | What’s shown | Link behavior |
-|------|--------------|---------------|
-| Email | `hello@kliviq.com` | `mailto:hello@kliviq.com?subject=Seenzo%20inquiry` — opens the user’s default email app with a pre-filled subject line |
-| Phone / WhatsApp | `+91 90690 26969 (WhatsApp only)` | `https://wa.me/919069026969` — opens a new WhatsApp chat on mobile and WhatsApp Web on desktop |
-| KlivIQ Instagram | Instagram icon | `https://instagram.com/kliviq` (new tab) |
-| KlivIQ Twitter/X | Twitter/X icon | `https://x.com/kliviq` (new tab) |
-| kliviq.com | Globe icon | `https://kliviq.com` (new tab) |
-| Company | `KlivIQ Technologies OPC Private Limited` | — |
+### 4. og:image meta tag
+No OG image exists in `/public` yet. I'll generate a branded 1200×630 image (Seenzo logo + tagline "Get seen by AI" on brand emerald background) and save it as `public/seenzo-og.png`. Then add to `src/routes/__root.tsx` head meta:
+- `og:image` → `https://www.seenzo.in/seenzo-og.png`
+- `og:image:width` `1200`, `og:image:height` `630`
+- `twitter:image` → same URL
 
-### Icons
-- Reuse existing imports: `Instagram`, `Twitter`, `Globe2`.
-- Add two new imports from `lucide-react`: `Mail` (for email) and `Phone` (for WhatsApp).
+Per platform guidance, `og:image` should live on leaf routes, not root — but since you want it sitewide as a default and no per-page images are defined, putting it in root is acceptable here; leaf pages can override later.
 
-### Note on footer link
-The existing footer has a `Contact` link pointing to `#`. We will **not** change it to keep the scope exactly as requested; if you want it to scroll to this new section afterward, just let us know and we can point it to `#contact` in a follow-up.
+### 5. Blog section at /blog
+Create two new routes, no backend:
+- `src/routes/blog/index.tsx` — index listing one post card linking to the post. Title "Blog — Seenzo", description, `Blog` JSON-LD, BreadcrumbList.
+- `src/routes/blog/what-is-ai-visibility.tsx` — full post, ~350–400 words, semantic `<article>` with H1, H2 subheads, author "Sriram Ramkumar", date today (2026-07-11). Head meta: title, description, `og:type: article`, canonical, `Article` JSON-LD (headline, author Person, datePublished, publisher Organization), BreadcrumbList.
+- Add "Blog" link to header nav and footer Product column in `SiteShell.tsx` and the homepage `NavBar` in `src/routes/index.tsx`.
+- Add both URLs to `public/sitemap.xml`.
 
-Please confirm and I’ll implement it.
+Post outline (300+ words):
+1. What is AI Visibility (ChatGPT/Gemini/Perplexity/Claude answer engines)
+2. Why it matters for Indian businesses (buyers asking AI, not just Googling)
+3. How it differs from SEO (retrieval vs ranking, citations vs clicks)
+4. What to fix first (structured data, entity clarity, India-specific signals like GST, directory presence)
+5. CTA linking to `/` for a free scan
+
+### Files changed
+- `src/routes/__root.tsx` — LocalBusiness in graph, og:image + twitter:image
+- `src/components/site/SiteShell.tsx` — phone in footer, Blog nav link
+- `src/routes/index.tsx` — phone in footer, Blog nav link
+- `src/routes/about.tsx`, `faq.tsx`, `glossary.tsx`, `privacy.tsx`, `terms.tsx` — BreadcrumbList JSON-LD
+- `src/routes/blog/index.tsx` (new)
+- `src/routes/blog/what-is-ai-visibility.tsx` (new)
+- `public/seenzo-og.png` (new, generated)
+- `public/sitemap.xml` — add /blog urls
+
+### Not touched
+Backend files (`src/lib/server/**`, `src/lib/inngest/**`, `src/routes/api/**`), `ScanForm.tsx`, scan schema, scoring engine.
