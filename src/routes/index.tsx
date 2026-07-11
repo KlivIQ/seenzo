@@ -101,6 +101,14 @@ function NavBar() {
               {label}
             </a>
           ))}
+          <a
+            href="https://www.kliviq.com/#products"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[15px] font-bold text-brand transition hover:text-brand-ink"
+          >
+            kliviq.com
+          </a>
         </nav>
       </div>
     </header>
