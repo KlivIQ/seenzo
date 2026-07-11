@@ -1,32 +1,33 @@
-## Two fixes
+## Plan: Add a contact section to the Seenzo landing page
 
-### 1. Resubmit the correct URL in Search Console
-- Remove `https://www.seenzo.in/public/sitemap.xml`
-- Add `https://www.seenzo.in/sitemap.xml`
+### What we’ll do
+Add a new, self-contained **Contact** section at the bottom of the homepage (after the FAQ section and before the existing footer). No other sections, components, or pages will be changed.
 
-(`/public` is the Vite source folder — files there are served from the site root, so `public/sitemap.xml` → `/sitemap.xml`.)
+### Scope
+- **Only file changed:** `src/routes/index.tsx`
+- **No changes to:** `SiteShell.tsx`, `ScanForm.tsx`, `styles.css`, any other routes, or any other files.
 
-### 2. Fix `public/sitemap.xml` to use absolute URLs
+### Section design
+- Insert `<Contact />` between `<FAQ />` and `<Footer />` in the main `Index` component.
+- Use the existing `Section` primitive so padding, width, and font behavior stay consistent with the rest of the page.
+- The contact card itself will be highlighted with the brand emerald / "zo" color from the Seenzo logo (`bg-brand`) and white text.
+- Add `id="contact"` so the section can be linked directly if needed later.
 
-Sitemaps require full `https://…` URLs in every `<loc>`. Update the file to:
+### Contact card content
+| Item | What’s shown | Link behavior |
+|------|--------------|---------------|
+| Email | `hello@kliviq.com` | `mailto:hello@kliviq.com?subject=Seenzo%20inquiry` — opens the user’s default email app with a pre-filled subject line |
+| Phone / WhatsApp | `+91 90690 26969 (WhatsApp only)` | `https://wa.me/919069026969` — opens a new WhatsApp chat on mobile and WhatsApp Web on desktop |
+| KlivIQ Instagram | Instagram icon | `https://instagram.com/kliviq` (new tab) |
+| KlivIQ Twitter/X | Twitter/X icon | `https://x.com/kliviq` (new tab) |
+| kliviq.com | Globe icon | `https://kliviq.com` (new tab) |
+| Company | `KlivIQ Technologies OPC Private Limited` | — |
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.seenzo.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://www.seenzo.in/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.seenzo.in/glossary</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://www.seenzo.in/privacy</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://www.seenzo.in/terms</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-</urlset>
-```
+### Icons
+- Reuse existing imports: `Instagram`, `Twitter`, `Globe2`.
+- Add two new imports from `lucide-react`: `Mail` (for email) and `Phone` (for WhatsApp).
 
-Also add a `Sitemap:` line to `public/robots.txt`:
+### Note on footer link
+The existing footer has a `Contact` link pointing to `#`. We will **not** change it to keep the scope exactly as requested; if you want it to scroll to this new section afterward, just let us know and we can point it to `#contact` in a follow-up.
 
-```
-Sitemap: https://www.seenzo.in/sitemap.xml
-```
-
-After publishing, click "Rescan" in Search Console — status should flip to Success.
-
-Confirm `https://www.seenzo.in` (with `www`) is your canonical domain — if you actually use the apex `https://seenzo.in`, I'll use that instead.
+Please confirm and I’ll implement it.
