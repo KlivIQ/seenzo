@@ -1,0 +1,20 @@
+/* TEAM */
+Company: KlivIQ Technologies OPC Private Limited
+Site: https://kliviq.com
+Contact: hello [at] kliviq.com
+Location: India
+
+/* PRODUCT */
+Name: Seenzo — Get Seen By AI
+Site: https://seenzo.in
+Tagline: India's AI Visibility platform for ChatGPT, Gemini, Perplexity and Claude.
+
+/* THANKS */
+To every early tester across Chennai, Bengaluru and Pune helping shape Seenzo.
+
+/* SITE */
+Language: English (en-IN)
+Doctype: HTML5
+Standards: HTML5, CSS3, ES2022, WCAG 2.1 AA (target)
+Components: TanStack Start, React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Radix UI, Vite
+Hosting region: India (ap-south-1)
