@@ -123,6 +123,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "See how ChatGPT, Gemini, Perplexity and Claude describe your business. Free AI Visibility Report for Indian businesses.",
       },
+      { property: "og:image", content: "https://www.seenzo.in/seenzo-og.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Seenzo — Get seen by AI" },
+      { name: "twitter:image", content: "https://www.seenzo.in/seenzo-og.png" },
     ],
     links: [
       {
@@ -181,6 +186,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
                 price: "0",
                 priceCurrency: "INR",
               },
+            },
+            {
+              "@type": "LocalBusiness",
+              name: "Seenzo by KlivIQ",
+              url: "https://www.seenzo.in",
+              email: "hello@kliviq.com",
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "Chennai",
+                addressRegion: "Tamil Nadu",
+                addressCountry: "IN",
+              },
+              telephone: "+919840497937",
             },
           ],
         }),

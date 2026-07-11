@@ -20,6 +20,8 @@ import {
   Instagram,
   Linkedin,
   Twitter,
+  Mail,
+  Phone,
 } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { ScanForm } from "@/components/site/ScanForm";
@@ -55,6 +57,7 @@ function Index() {
       <WhyIndia />
       <Testimonials />
       <FAQ />
+      <Contact />
       <Footer />
     </main>
   );
@@ -88,6 +91,8 @@ function NavBar() {
             ["Benefits", "#benefits"],
             ["Features", "#features"],
             ["FAQ", "#faq"],
+            ["Blog", "/blog"],
+            ["Contact", "#contact"],
           ].map(([label, href]) => (
             <a
               key={href}
@@ -97,6 +102,14 @@ function NavBar() {
               {label}
             </a>
           ))}
+          <a
+            href="https://www.kliviq.com/#products"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[15px] font-bold text-brand transition hover:text-brand-ink"
+          >
+            kliviq.com
+          </a>
         </nav>
       </div>
     </header>
@@ -816,6 +829,89 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+/* ---------- Contact ---------- */
+function Contact() {
+  return (
+    <Section id="contact">
+      <div className="mx-auto max-w-3xl text-center">
+        <div className="text-sm font-semibold tracking-widest text-brand-ink uppercase">
+          Get in touch
+        </div>
+        <h2 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
+          Contact us
+        </h2>
+        <p className="mt-4 text-lg text-slate-600">
+          Have a question about your AI visibility? Reach out directly.
+        </p>
+      </div>
+
+      <div className="mx-auto mt-10 max-w-2xl rounded-3xl bg-brand p-8 text-white shadow-xl sm:p-10">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <a
+            href="mailto:hello@kliviq.com?subject=Seenzo%20inquiry"
+            className="flex items-center gap-3 rounded-xl bg-white/10 p-4 transition hover:bg-white/20"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Mail className="h-5 w-5 shrink-0" />
+            <div>
+              <div className="text-xs font-semibold uppercase opacity-80">Email</div>
+              <div className="text-sm font-semibold">hello@kliviq.com</div>
+            </div>
+          </a>
+
+          <a
+            href="https://wa.me/919069026969?text=Hi%20Seenzo%20team%2C%20I%20would%20like%20to%20know%20more"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-xl bg-white/10 p-4 transition hover:bg-white/20"
+          >
+            <Phone className="h-5 w-5 shrink-0" />
+            <div>
+              <div className="text-xs font-semibold uppercase opacity-80">WhatsApp only</div>
+              <div className="text-sm font-semibold">+91 90690 26969</div>
+            </div>
+          </a>
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <a
+            href="https://instagram.com/kliviq"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="KlivIQ on Instagram"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+          >
+            <Instagram className="h-5 w-5" />
+          </a>
+          <a
+            href="https://x.com/kliviq"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="KlivIQ on X"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+          >
+            <Twitter className="h-5 w-5" />
+          </a>
+          <a
+            href="https://kliviq.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="KlivIQ website"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition hover:bg-white/20"
+          >
+            <Globe2 className="h-5 w-5" />
+          </a>
+        </div>
+
+        <p className="mt-6 text-center text-sm font-medium opacity-90">
+          KlivIQ Technologies OPC Private Limited · India
+        </p>
+      </div>
+    </Section>
+  );
+}
+
 /* ---------- Footer ---------- */
 function Footer() {
   const quickLinks: Array<[string, string]> = [
@@ -826,12 +922,13 @@ function Footer() {
     ["FAQ", "#faq"],
     ["All FAQs", "/faq"],
     ["Glossary", "/glossary"],
+    ["Blog", "/blog"],
     ["Request scan", "#scan"],
   ];
   const legalLinks: Array<[string, string]> = [
     ["Terms & Conditions", "/terms"],
     ["Privacy Policy", "/privacy"],
-    ["Contact", "#"],
+    ["Contact", "#contact"],
   ];
   const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
     { label: "Facebook", href: "https://facebook.com/seenzo", Icon: Facebook },
@@ -894,7 +991,13 @@ function Footer() {
             >
               www.kliviq.com
             </a>
-            <p className="mt-2 text-sm text-slate-500">India</p>
+            <p className="mt-2 text-sm text-slate-500">Chennai, India</p>
+            <a
+              href="tel:+919069026969"
+              className="mt-2 text-sm font-medium text-brand-ink transition hover:text-ink"
+            >
+              +91 90690 26969
+            </a>
           </FooterCol>
         </div>
 

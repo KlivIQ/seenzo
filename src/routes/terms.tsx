@@ -25,6 +25,19 @@ export const Route = createFileRoute("/terms")({
           "Seenzo Terms of Service. Read the terms that apply to the free AI Visibility Report and your use of this website.",
       },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://www.seenzo.in/" },
+            { "@type": "ListItem", position: 2, name: "Terms of Service", item: "https://www.seenzo.in/terms" },
+          ],
+        }),
+      },
+    ],
   }),
 });
 

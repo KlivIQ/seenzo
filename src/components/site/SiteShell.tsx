@@ -30,6 +30,8 @@ function NavBar() {
             ["Benefits", "/#benefits"],
             ["Features", "/#features"],
             ["FAQ", "/#faq"],
+            ["Blog", "/blog"],
+            ["Contact", "/#contact"],
           ].map(([label, href]) => (
             <a
               key={href}
@@ -61,12 +63,13 @@ function Footer() {
     ["FAQ", "/#faq"],
     ["All FAQs", "/faq"],
     ["Glossary", "/glossary"],
+    ["Blog", "/blog"],
     ["Request scan", "/#scan"],
   ];
   const legalLinks: Array<[string, string]> = [
     ["Terms & Conditions", "/terms"],
     ["Privacy Policy", "/privacy"],
-    ["Contact", "#"],
+    ["Contact", "/#contact"],
   ];
   const socials: Array<{ label: string; href: string; Icon: typeof Facebook }> = [
     { label: "Facebook", href: "https://facebook.com/seenzo", Icon: Facebook },
@@ -118,10 +121,17 @@ function Footer() {
           </FooterCol>
 
           <FooterCol title="Company">
+            <FooterLink href="/about">About</FooterLink>
             <p className="text-sm leading-relaxed text-slate-600">
               KlivIQ Technologies OPC Private Limited
             </p>
-            <p className="mt-2 text-sm text-slate-500">India</p>
+            <p className="mt-2 text-sm text-slate-500">Chennai, India</p>
+            <a
+              href="tel:+919069026969"
+              className="mt-2 text-sm font-medium text-brand-ink transition hover:text-ink"
+            >
+              +91 90690 26969
+            </a>
           </FooterCol>
         </div>
 
