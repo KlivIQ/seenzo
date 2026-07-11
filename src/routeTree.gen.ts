@@ -17,8 +17,10 @@ import { Route as GlossaryRouteImport } from './routes/glossary'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as RSlugRouteImport } from './routes/r.$slug'
+import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as ApiTrackRouteImport } from './routes/api/track'
 import { Route as ApiScanRequestRouteImport } from './routes/api/scan-request'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
@@ -65,6 +67,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -73,6 +80,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const RSlugRoute = RSlugRouteImport.update({
   id: '/r/$slug',
   path: '/r/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTrackRoute = ApiTrackRouteImport.update({
@@ -114,8 +126,10 @@ export interface FileRoutesByFullPath {
   '/api/inngest': typeof ApiInngestRoute
   '/api/scan-request': typeof ApiScanRequestRoute
   '/api/track': typeof ApiTrackRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/r/$slug': typeof RSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/api/admin/leads': typeof ApiAdminLeadsRoute
 }
 export interface FileRoutesByTo {
@@ -131,8 +145,10 @@ export interface FileRoutesByTo {
   '/api/inngest': typeof ApiInngestRoute
   '/api/scan-request': typeof ApiScanRequestRoute
   '/api/track': typeof ApiTrackRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/r/$slug': typeof RSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/api/admin/leads': typeof ApiAdminLeadsRoute
 }
 export interface FileRoutesById {
@@ -149,8 +165,10 @@ export interface FileRoutesById {
   '/api/inngest': typeof ApiInngestRoute
   '/api/scan-request': typeof ApiScanRequestRoute
   '/api/track': typeof ApiTrackRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/r/$slug': typeof RSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/api/admin/leads': typeof ApiAdminLeadsRoute
 }
 export interface FileRouteTypes {
@@ -168,8 +186,10 @@ export interface FileRouteTypes {
     | '/api/inngest'
     | '/api/scan-request'
     | '/api/track'
+    | '/blog/$slug'
     | '/r/$slug'
     | '/admin/'
+    | '/blog/'
     | '/api/admin/leads'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -185,8 +205,10 @@ export interface FileRouteTypes {
     | '/api/inngest'
     | '/api/scan-request'
     | '/api/track'
+    | '/blog/$slug'
     | '/r/$slug'
     | '/admin'
+    | '/blog'
     | '/api/admin/leads'
   id:
     | '__root__'
@@ -202,8 +224,10 @@ export interface FileRouteTypes {
     | '/api/inngest'
     | '/api/scan-request'
     | '/api/track'
+    | '/blog/$slug'
     | '/r/$slug'
     | '/admin/'
+    | '/blog/'
     | '/api/admin/leads'
   fileRoutesById: FileRoutesById
 }
@@ -220,8 +244,10 @@ export interface RootRouteChildren {
   ApiInngestRoute: typeof ApiInngestRoute
   ApiScanRequestRoute: typeof ApiScanRequestRoute
   ApiTrackRoute: typeof ApiTrackRoute
+  BlogSlugRoute: typeof BlogSlugRoute
   RSlugRoute: typeof RSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   ApiAdminLeadsRoute: typeof ApiAdminLeadsRoute
 }
 
@@ -283,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -295,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$slug'
       fullPath: '/r/$slug'
       preLoaderRoute: typeof RSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/track': {
@@ -348,10 +388,22 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInngestRoute: ApiInngestRoute,
   ApiScanRequestRoute: ApiScanRequestRoute,
   ApiTrackRoute: ApiTrackRoute,
+  BlogSlugRoute: BlogSlugRoute,
   RSlugRoute: RSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
+  BlogIndexRoute: BlogIndexRoute,
   ApiAdminLeadsRoute: ApiAdminLeadsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
