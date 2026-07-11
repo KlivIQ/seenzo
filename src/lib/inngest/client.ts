@@ -12,21 +12,17 @@ let client: Inngest | undefined;
 // since TanStack Start's SSR entry eagerly imports every route module, take
 // down every route rather than just the Inngest ones.
 
-// Vercel sets VERCEL_GIT_COMMIT_REF (the branch that triggered the deploy,
-// e.g. "main") on every deployment, production included. The SDK's header
-// builder is `opts.inngestEnv || getEnvironmentName(env)` — ANY truthy value
-// for the client's `env` option (this codebase previously tried pinning it
-// to the literal string "production") still gets sent as `x-inngest-env`,
-// and Inngest Cloud then tries to resolve it as a Branch Environment and
-// 404s ("Branch environment does not exist"), since no branch env is
-// configured for this app — there's only Production. The only way to get
-// the SDK to omit the header (and so fall back to whichever environment the
-// signing/event key itself belongs to, i.e. Production) is for
-// getEnvironmentName() to find nothing at all — which means
-// VERCEL_GIT_COMMIT_REF must not be visible to it. There's no supported
-// client option to suppress this, so we strip the var before the SDK reads
-// it. Confirmed against the SDK's own env.js source, not just docs.
-delete process.env.VERCEL_GIT_COMMIT_REF;
+// INNGEST_ENV=production is set in Vercel (Production scope) so the SDK's
+// header builder (`opts.inngestEnv || getEnvironmentName(env)`) picks it up
+// first, ahead of VERCEL_GIT_COMMIT_REF/BRANCH_NAME/etc — no branch-env
+// header gets sent, and Inngest Cloud resolves events against Production.
+
+// TEMP DEBUG — remove once the branch-env issue is confirmed resolved.
+console.log("[inngest client] env vars at construction", {
+  INNGEST_ENV: process.env.INNGEST_ENV,
+  VERCEL_ENV: process.env.VERCEL_ENV,
+  VERCEL_GIT_COMMIT_REF: process.env.VERCEL_GIT_COMMIT_REF,
+});
 
 /** Shared Inngest client — one instance per runtime, lazily created. */
 export function getInngest(): Inngest {
@@ -35,6 +31,7 @@ export function getInngest(): Inngest {
       id: "seenzo",
       eventKey: process.env.INNGEST_EVENT_KEY,
       signingKey: process.env.INNGEST_SIGNING_KEY,
+      env: process.env.INNGEST_ENV || undefined,
     });
   }
   return client;
