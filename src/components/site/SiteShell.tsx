@@ -33,7 +33,7 @@ function NavBar() {
         <a href="/" className="flex items-center" aria-label="Seenzo home">
           <Logo />
         </a>
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-8 lg:flex">
           {navLinks.map(([label, href]) => (
             <a
               key={href}
@@ -54,7 +54,7 @@ function NavBar() {
           </a>
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 md:hidden"
+            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden"
             onClick={() => setMenuOpen((open) => !open)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
@@ -64,7 +64,7 @@ function NavBar() {
         </div>
       </div>
       {menuOpen && (
-        <div className="border-t border-slate-200 bg-white px-5 py-4 md:hidden">
+        <div className="border-t border-slate-200 bg-white px-5 py-4 lg:hidden">
           <nav className="flex flex-col gap-3">
             {navLinks.map(([label, href]) => (
               <a
