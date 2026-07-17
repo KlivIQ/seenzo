@@ -158,8 +158,9 @@ function Hero() {
   return (
     <section id="top" className="relative overflow-hidden">
       <BackgroundGrid />
-      <div className="relative mx-auto grid max-w-6xl gap-14 px-5 pt-16 pb-24 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:pt-24 lg:pb-32">
-        <div className="rise-in order-2 lg:order-1">
+      <div className="relative mx-auto grid max-w-6xl gap-14 px-5 pt-16 pb-24 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-x-14 lg:gap-y-6 lg:pt-24 lg:pb-32">
+        {/* Lead: pills + headline */}
+        <div className="rise-in order-1 lg:col-span-1">
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand-soft px-3 py-1.5 text-sm font-semibold text-brand-ink">
               <Sparkles className="h-3.5 w-3.5" />
@@ -173,11 +174,23 @@ function Hero() {
               Built in India · For Indian businesses
             </div>
           </div>
-          <h1 className="mt-6 font-display text-[42px] leading-[1.05] font-extrabold tracking-tight text-ink sm:text-[56px] lg:text-[64px]">
+          <h2 className="mt-6 font-display text-[42px] leading-[1.05] font-extrabold tracking-tight text-ink sm:text-[56px] lg:text-[64px]">
             See how <span className="text-brand">AI</span> sees
             <br /> your business.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-slate-600">
+          </h2>
+        </div>
+
+        {/* Form */}
+        <div
+          id="scan"
+          className="rise-in order-2 lg:col-start-2 lg:row-span-2 lg:row-start-1 [animation-delay:120ms] scroll-mt-24"
+        >
+          <ScanForm />
+        </div>
+
+        {/* Details: subtitle + bullets + buttons + trust */}
+        <div className="rise-in order-3 lg:col-span-1">
+          <p className="max-w-xl text-lg text-slate-600">
             Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix list.
             Delivered by email in minutes.
           </p>
@@ -225,10 +238,6 @@ function Hero() {
               ),
             )}
           </ul>
-        </div>
-
-        <div id="scan" className="rise-in order-1 lg:order-2 [animation-delay:120ms] scroll-mt-24">
-          <ScanForm />
         </div>
       </div>
     </section>
