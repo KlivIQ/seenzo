@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { ArrowRight, Facebook, Instagram, Linkedin, Twitter, Menu, X } from "lucide-react";
 
 import { Logo } from "./Logo";
 

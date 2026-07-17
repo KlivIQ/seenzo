@@ -22,6 +22,7 @@ import {
   Twitter,
   Mail,
   Phone,
+  Menu,
 } from "lucide-react";
 import { Logo } from "@/components/site/Logo";
 import { ScanForm } from "@/components/site/ScanForm";
