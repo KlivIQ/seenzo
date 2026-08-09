@@ -174,7 +174,7 @@ function Hero() {
               Built in India · For Indian businesses
             </div>
           </div>
-          <h2 className="mt-6 font-display text-[38px] leading-[1.1] font-extrabold tracking-tight text-ink sm:text-[48px] lg:text-[54px]">
+          <h2 className="mt-6 font-display text-[19px] leading-[1.1] font-extrabold tracking-tight text-ink sm:text-[24px] lg:text-[27px]">
             Search is moving to <span className="text-brand">AI</span>.
             <br /> Can it find your business?
             <br /> Do a 30-second check.
