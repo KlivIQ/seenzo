@@ -95,6 +95,7 @@ export const Route = createFileRoute("/admin/")({
 const statusStyle: Record<Status, string> = {
   unverified: "bg-slate-500/15 text-slate-300 border-slate-500/30",
   verified: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  scanning: "bg-sky-500/15 text-sky-300 border-sky-500/30",
   scanned: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   contacted: "bg-violet-500/15 text-violet-300 border-violet-500/30",
   consult_booked: "bg-lime-500/15 text-lime-300 border-lime-500/30",
@@ -106,6 +107,7 @@ const statusStyle: Record<Status, string> = {
 const statusLabel: Record<Status, string> = {
   unverified: "Unverified",
   verified: "Verified",
+  scanning: "Scanning",
   scanned: "Scanned",
   contacted: "Contacted",
   consult_booked: "Consult booked",

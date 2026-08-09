@@ -17,12 +17,15 @@ function getRedis(): Redis {
 
 let emailLimiter: Ratelimit | undefined;
 
-/** Allows one scan request per email address per 30 days. */
+// Email verification is gone, so a stuck request has no click-to-retry
+// fallback — 24h (rather than the old 30d) lets a legitimate user rescan
+// after fixing issues without waiting a month.
+/** Allows one scan request per email address per 24 hours. */
 export function getEmailRateLimiter(): Ratelimit {
   if (!emailLimiter) {
     emailLimiter = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.fixedWindow(1, "30 d"),
+      limiter: Ratelimit.fixedWindow(1, "24 h"),
       prefix: "seenzo:ratelimit:email",
     });
   }
@@ -31,13 +34,12 @@ export function getEmailRateLimiter(): Ratelimit {
 
 let ipLimiter: Ratelimit | undefined;
 
-// Raised from 3 to 10 for launch-week testing — drop back to 3 after soft launch.
-/** Allows up to 10 scan requests per IP address per day. */
+/** Allows up to 3 scan requests per IP address per day. */
 export function getIpRateLimiter(): Ratelimit {
   if (!ipLimiter) {
     ipLimiter = new Ratelimit({
       redis: getRedis(),
-      limiter: Ratelimit.fixedWindow(10, "1 d"),
+      limiter: Ratelimit.fixedWindow(3, "1 d"),
       prefix: "seenzo:ratelimit:ip",
     });
   }

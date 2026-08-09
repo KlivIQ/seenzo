@@ -4,8 +4,11 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type LeadStatus =
+  // "unverified"/"verified" are kept for backward compatibility with rows
+  // created before email verification was removed — no longer written.
   | "unverified"
   | "verified"
+  | "scanning"
   | "scanned"
   | "contacted"
   | "consult_booked"
@@ -32,6 +35,7 @@ export type ActivityType =
   | "email_sent"
   | "whatsapp_sent"
   | "wa_sent"
+  | "wa_skipped_no_phone"
   | "cta_consult_clicked"
   | "cta_whatsapp_clicked"
   | "sequence_complete"
@@ -58,6 +62,7 @@ export interface Database {
           consent_ip: string | null;
           verify_token: string | null;
           verify_expires: string | null;
+          report_slug: string | null;
           utm: Json | null;
           notes: string | null;
         };
@@ -77,6 +82,7 @@ export interface Database {
           consent_ip?: string | null;
           verify_token?: string | null;
           verify_expires?: string | null;
+          report_slug?: string | null;
           utm?: Json | null;
           notes?: string | null;
         };
@@ -96,6 +102,7 @@ export interface Database {
           consent_ip?: string | null;
           verify_token?: string | null;
           verify_expires?: string | null;
+          report_slug?: string | null;
           utm?: Json | null;
           notes?: string | null;
         };

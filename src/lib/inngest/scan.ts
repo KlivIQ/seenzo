@@ -34,7 +34,7 @@ function truncateEvidence(evidence: string): string {
 export const scanRun = getInngest().createFunction(
   { id: "scan-run", triggers: [{ event: "scan/requested" }] },
   async ({ event, step }) => {
-    const { leadId, websiteUrl } = event.data as ScanRequestedEventData;
+    const { leadId, websiteUrl, reportSlug: eventSlug } = event.data as ScanRequestedEventData;
 
     // Crawl and run checks inside one step scope — raw HTML must never be
     // returned from a step.run() closure, only the small computed results.
@@ -70,7 +70,10 @@ export const scanRun = getInngest().createFunction(
 
     const stored = await step.run("store-results", async () => {
       const supabase = getSupabaseServer();
-      const reportSlug = nanoid(10);
+      // Slug now comes from the lead record (generated at scan-request time
+      // so the client can start polling immediately). Falls back to a fresh
+      // one only for the admin rerun path, which doesn't pass reportSlug.
+      const reportSlug = eventSlug ?? nanoid(10);
       const nowIso = new Date().toISOString();
 
       const { data: scan, error: scanError } = await supabase

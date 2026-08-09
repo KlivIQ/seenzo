@@ -1,15 +1,16 @@
 import { nanoid } from "nanoid";
 
-import { renderVerifyEmail } from "@/lib/email/verify-email";
 import { scanSchema } from "@/lib/scan-schema";
 import { getSupabaseServer } from "@/lib/supabase";
+import type { LeadInsert } from "@/lib/types/database";
 
+import { hasMxRecords, isDisposableEmail } from "./email-validation";
 import { requireEnv } from "./env";
+import { sendScanRequested } from "./inngest-send";
 import { getEmailRateLimiter, getIpRateLimiter } from "./rate-limit";
-import { getResend } from "./resend";
 
-const VERIFY_TOKEN_TTL_MS = 48 * 60 * 60 * 1000;
-const SENDER_EMAIL = "reports@seenzo.in";
+const REPORT_SLUG_LENGTH = 14;
+const INVALID_EMAIL_MESSAGE = "That email doesn't look right — please check and try again.";
 
 export type ScanRequestInput = {
   name: string;
@@ -22,77 +23,21 @@ export type ScanRequestInput = {
 export type ScanRequestErrorCode = "validation" | "rate_limited" | "server_error";
 
 export type ScanRequestResult =
-  | { success: true; message: string; reportSlug?: string }
+  | { success: true; slug: string; reportSlug?: string }
   | { success: false; error: string; code: ScanRequestErrorCode };
 
-// SHA-256 via Web Crypto (globalThis.crypto.subtle) — edge-compatible, no Node `crypto` import.
-async function hashWebsiteUrl(url: string): Promise<string> {
-  const normalized = url.trim().toLowerCase().replace(/\/+$/, "");
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+async function hasValidEmailDomain(email: string): Promise<boolean> {
+  if (isDisposableEmail(email)) return false;
 
-async function findCachedReportSlug(websiteUrl: string): Promise<string | null> {
-  const supabase = getSupabaseServer();
-  const urlHash = await hashWebsiteUrl(websiteUrl);
-
-  const { data: cached } = await supabase
-    .from("url_cache")
-    .select("scan_id, expires_at")
-    .eq("url_hash", urlHash)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
-
-  if (!cached) return null;
-
-  const { data: scan } = await supabase
-    .from("scans")
-    .select("report_slug")
-    .eq("id", cached.scan_id)
-    .maybeSingle();
-
-  return scan?.report_slug ?? null;
-}
-
-// A lead stuck as 'unverified' with an expired token is dead weight — the
-// original verify link can never succeed. Clear it so the email can submit
-// fresh rather than being blocked by the 1-scan-per-30-days email limiter.
-async function clearStaleUnverifiedLead(email: string): Promise<boolean> {
-  const supabase = getSupabaseServer();
-  const { data: stale } = await supabase
-    .from("leads")
-    .select("id")
-    .ilike("email", email)
-    .eq("status", "unverified")
-    .lt("verify_expires", new Date().toISOString())
-    .maybeSingle();
-
-  if (!stale) return false;
-
-  const { error } = await supabase.from("leads").delete().eq("id", stale.id);
-  if (error) throw new Error(`Failed to clear stale lead: ${error.message}`);
-  return true;
-}
-
-async function sendVerificationEmail(
-  to: string,
-  name: string,
-  websiteUrl: string,
-  token: string,
-): Promise<void> {
-  const resend = getResend();
-  const verifyUrl = `https://www.seenzo.in/verify?token=${token}`;
-
-  const { error } = await resend.emails.send({
-    from: SENDER_EMAIL,
-    to,
-    subject: "Confirm your Seenzo scan",
-    html: await renderVerifyEmail({ name, websiteUrl, verifyUrl }),
-  });
-
-  if (error) throw new Error(`Resend error: ${error.message}`);
+  const domain = email.split("@").pop() ?? "";
+  try {
+    return await hasMxRecords(domain);
+  } catch (error) {
+    // A DNS-over-HTTPS hiccup shouldn't block a legitimate signup — treat a
+    // failed lookup as inconclusive rather than as a rejection.
+    console.error("MX lookup failed", error);
+    return true;
+  }
 }
 
 export async function handleScanRequest(
@@ -113,22 +58,19 @@ export async function handleScanRequest(
     }
     const { name, business, email, phone, website } = parsed.data;
 
-    // A stale unverified lead means the email limiter's prior "success" is
-    // meaningless (that request can never complete) — bypass it for this
-    // submission only. The IP limiter still applies.
-    const staleLeadCleared = await clearStaleUnverifiedLead(email);
+    if (!(await hasValidEmailDomain(email))) {
+      return { success: false, error: INVALID_EMAIL_MESSAGE, code: "validation" };
+    }
 
     const [emailLimit, ipLimit] = await Promise.all([
-      staleLeadCleared
-        ? Promise.resolve({ success: true } as const)
-        : getEmailRateLimiter().limit(email.toLowerCase()),
+      getEmailRateLimiter().limit(email.toLowerCase()),
       getIpRateLimiter().limit(clientIp),
     ]);
 
     if (!emailLimit.success) {
       return {
         success: false,
-        error: "A scan for this email was already requested recently. Check your inbox.",
+        error: "A scan for this email was already requested recently. Please try again later.",
         code: "rate_limited",
       };
     }
@@ -140,37 +82,51 @@ export async function handleScanRequest(
       };
     }
 
-    const cachedSlug = await findCachedReportSlug(website);
-
     const supabase = getSupabaseServer();
-    const token = nanoid();
-    const verifyExpires = new Date(Date.now() + VERIFY_TOKEN_TTL_MS).toISOString();
+    const reportSlug = nanoid(REPORT_SLUG_LENGTH);
 
-    const { error: insertError } = await supabase.from("leads").insert({
+    const leadInsert: LeadInsert = {
       name,
       business_name: business,
       email,
       phone,
       website_url: website,
-      status: "unverified",
+      status: "scanning",
       heat_score: 0,
-      verify_token: token,
-      verify_expires: verifyExpires,
-    });
+      report_slug: reportSlug,
+    };
 
-    if (insertError) throw new Error(`Failed to save lead: ${insertError.message}`);
+    const { data: lead, error: insertError } = await supabase
+      .from("leads")
+      .insert(leadInsert)
+      .select("id")
+      .single();
 
-    if (cachedSlug) {
+    if (insertError || !lead) {
+      throw new Error(`Failed to save lead: ${insertError?.message ?? "unknown error"}`);
+    }
+
+    // No retry-by-clicking-a-link fallback anymore, so this must be awaited:
+    // a lead the pipeline never hears about would sit at 'scanning' forever.
+    try {
+      await sendScanRequested({
+        leadId: lead.id,
+        websiteUrl: website,
+        leadName: name,
+        businessName: business,
+        reportSlug,
+      });
+    } catch (error) {
+      console.error("Failed to send scan/requested event, removing orphaned lead", error);
+      await supabase.from("leads").delete().eq("id", lead.id);
       return {
-        success: true,
-        message: "We already have a recent scan for this website.",
-        reportSlug: cachedSlug,
+        success: false,
+        error: "Something went wrong, please try again",
+        code: "server_error",
       };
     }
 
-    await sendVerificationEmail(email, name, website, token);
-
-    return { success: true, message: "Check your email to confirm your scan" };
+    return { success: true, slug: reportSlug };
   } catch (error) {
     console.error("scan-request failed", error);
     return { success: false, error: "Something went wrong", code: "server_error" };

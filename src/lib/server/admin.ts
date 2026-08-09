@@ -288,6 +288,7 @@ const ACTIVITY_LABELS: Record<ActivityType, string> = {
   email_sent: "Email sent",
   whatsapp_sent: "WhatsApp sent",
   wa_sent: "WhatsApp sent",
+  wa_skipped_no_phone: "WhatsApp skipped (no phone)",
   cta_consult_clicked: 'Clicked "Book consultation"',
   cta_whatsapp_clicked: 'Clicked "WhatsApp us"',
   sequence_complete: "Follow-up sequence complete",

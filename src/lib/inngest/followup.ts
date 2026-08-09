@@ -23,6 +23,10 @@ function hasConverted(status: LeadStatus | null): boolean {
   return status !== null && CONVERTED_STATUSES.includes(status);
 }
 
+function hasPhone(phone: string | null | undefined): phone is string {
+  return typeof phone === "string" && phone.trim().length > 0;
+}
+
 function toWhatsAppNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   return digits.length === 10 ? `91${digits}` : digits;
@@ -112,15 +116,21 @@ export const followupSequence = getInngest().createFunction(
       return data;
     });
 
-    await step.run("send-whatsapp-day2", () =>
-      sendWhatsApp(
-        leadDay2.phone,
-        `Hi ${leadDay2.name}, did you see your Seenzo Score? Your #1 fix takes about 2 days to implement. Book a free call: ${reportUrl}`,
-      ),
-    );
-    await step.run("log-wa-sent-day2", () =>
-      logActivity(leadId, "wa_sent", { slug, stage: "day2" }),
-    );
+    if (hasPhone(leadDay2.phone)) {
+      await step.run("send-whatsapp-day2", () =>
+        sendWhatsApp(
+          leadDay2.phone,
+          `Hi ${leadDay2.name}, did you see your Seenzo Score? Your #1 fix takes about 2 days to implement. Book a free call: ${reportUrl}`,
+        ),
+      );
+      await step.run("log-wa-sent-day2", () =>
+        logActivity(leadId, "wa_sent", { slug, stage: "day2" }),
+      );
+    } else {
+      await step.run("log-wa-skipped-day2", () =>
+        logActivity(leadId, "wa_skipped_no_phone", { slug, stage: "day2" }),
+      );
+    }
 
     // --- Day 5: case-study email ---
     await step.sleep("wait-3-more-days", "3d");
@@ -188,15 +198,21 @@ export const followupSequence = getInngest().createFunction(
       return data;
     });
 
-    await step.run("send-whatsapp-day10", () =>
-      sendWhatsApp(
-        leadDay10.phone,
-        "Last nudge — your Seenzo report expires soon. 15 mins with our team could fix your top issue this week.",
-      ),
-    );
-    await step.run("log-wa-sent-day10", () =>
-      logActivity(leadId, "wa_sent", { slug, stage: "day10" }),
-    );
+    if (hasPhone(leadDay10.phone)) {
+      await step.run("send-whatsapp-day10", () =>
+        sendWhatsApp(
+          leadDay10.phone,
+          "Last nudge — your Seenzo report expires soon. 15 mins with our team could fix your top issue this week.",
+        ),
+      );
+      await step.run("log-wa-sent-day10", () =>
+        logActivity(leadId, "wa_sent", { slug, stage: "day10" }),
+      );
+    } else {
+      await step.run("log-wa-skipped-day10", () =>
+        logActivity(leadId, "wa_skipped_no_phone", { slug, stage: "day10" }),
+      );
+    }
 
     await step.run("log-sequence-complete", () =>
       logActivity(leadId, "sequence_complete", { slug }),

@@ -51,6 +51,25 @@ const AI_BOT_AGENTS = [
   "applebot-extended",
 ];
 
+// Plain-English names for the crawler evidence strings — customers know
+// "ChatGPT" and "Claude", not "GPTBot" or "ClaudeBot".
+const AI_BOT_FRIENDLY_NAMES: Record<string, string> = {
+  gptbot: "ChatGPT",
+  "chatgpt-user": "ChatGPT",
+  "oai-searchbot": "ChatGPT search",
+  "google-extended": "Google AI",
+  perplexitybot: "Perplexity",
+  "anthropic-ai": "Claude",
+  claudebot: "Claude",
+  "claude-web": "Claude",
+  ccbot: "the AI models trained on Common Crawl",
+  "applebot-extended": "Apple Intelligence",
+};
+
+function friendlyBotNames(agents: string[]): string[] {
+  return Array.from(new Set(agents.map((a) => AI_BOT_FRIENDLY_NAMES[a] ?? a)));
+}
+
 const INDIAN_DIRECTORY_HOSTS = [
   "justdial.com",
   "indiamart.com",
@@ -81,10 +100,15 @@ const https: CheckDefinition = {
   run: (data) => {
     const isHttps = data.homepage.url.startsWith("https://");
     return isHttps
-      ? outcome("pass", "Site is served over HTTPS.", "", "low")
+      ? outcome(
+          "pass",
+          "Your site loads securely — AI crawlers won't flag it as unsafe.",
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          `Site is served over ${new URL(data.homepage.url).protocol.replace(":", "")}, not HTTPS.`,
+          "Your site isn't secured — AI engines deprioritize or skip unsecured sites entirely.",
           "Move the site to HTTPS with a valid TLS certificate — AI crawlers deprioritize insecure sites.",
           "med",
         );
@@ -97,11 +121,16 @@ const robots_exists: CheckDefinition = {
   label: "robots.txt present",
   run: (data) => {
     if (data.robots && data.robots.status === 200 && data.robots.body.trim().length > 0) {
-      return outcome("pass", "robots.txt found and non-empty.", "", "low");
+      return outcome(
+        "pass",
+        "Your site tells AI crawlers exactly which pages they're allowed to read.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "fail",
-      "No robots.txt found at /robots.txt.",
+      "Your site gives AI crawlers no instructions at all, so some skip it entirely to be safe.",
       "Add a robots.txt file that explicitly allows AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended) and links your sitemap.",
       "low",
     );
@@ -116,7 +145,7 @@ const robots_ai_bots: CheckDefinition = {
     if (!data.robots || data.robots.status !== 200) {
       return outcome(
         "pass",
-        "No robots.txt present, so no AI crawler is explicitly blocked.",
+        "Nothing on your site is blocking AI crawlers from reading it.",
         "",
         "low",
       );
@@ -124,36 +153,55 @@ const robots_ai_bots: CheckDefinition = {
     const parsed = parseRobotsTxt(data.robots.body);
     const blocked: string[] = [];
     const restricted: string[] = [];
+    let blocksAll = false;
 
     for (const group of parsed.groups) {
       const targetsAiBot = group.agents.some((a) => a === "*" || AI_BOT_AGENTS.includes(a));
       if (!targetsAiBot) continue;
       const fullyBlocked = group.disallow.some((d) => d === "/");
       if (fullyBlocked) {
-        blocked.push(...group.agents.filter((a) => a !== "*"));
-        if (group.agents.includes("*")) blocked.push("* (all bots)");
+        if (group.agents.includes("*")) {
+          blocksAll = true;
+        } else {
+          blocked.push(...group.agents.filter((a) => AI_BOT_AGENTS.includes(a)));
+        }
       } else if (group.disallow.length > 0) {
-        restricted.push(...group.agents);
+        restricted.push(...group.agents.filter((a) => AI_BOT_AGENTS.includes(a)));
       }
     }
 
-    if (blocked.length > 0) {
+    if (blocksAll) {
       return outcome(
         "fail",
-        `robots.txt fully blocks: ${Array.from(new Set(blocked)).join(", ")}.`,
+        "AI crawlers are blocked from your site — ChatGPT, Claude and Perplexity cannot read a single page.",
+        "Remove the Disallow: / rule for AI crawler user-agents (GPTBot, ClaudeBot, PerplexityBot, Google-Extended) so your pages can be read and cited.",
+        "low",
+      );
+    }
+    if (blocked.length > 0) {
+      const names = friendlyBotNames(blocked).join(", ");
+      return outcome(
+        "fail",
+        `AI crawlers are blocked from your site — ${names} cannot read a single page.`,
         "Remove the Disallow: / rule for AI crawler user-agents (GPTBot, ClaudeBot, PerplexityBot, Google-Extended) so your pages can be read and cited.",
         "low",
       );
     }
     if (restricted.length > 0) {
+      const names = friendlyBotNames(restricted).join(", ");
       return outcome(
         "partial",
-        `robots.txt partially restricts: ${Array.from(new Set(restricted)).join(", ")}.`,
+        `${names} can reach parts of your site, but some pages are off-limits — they may miss content that would help them recommend you.`,
         "Review the Disallow paths for AI crawler user-agents to make sure your key content pages aren't excluded.",
         "low",
       );
     }
-    return outcome("pass", "No AI crawler is blocked in robots.txt.", "", "low");
+    return outcome(
+      "pass",
+      "Every major AI crawler — ChatGPT, Claude, Perplexity — is free to read your site.",
+      "",
+      "low",
+    );
   },
 };
 
@@ -167,11 +215,16 @@ const sitemap_exists: CheckDefinition = {
       data.sitemap.status === 200 &&
       /<urlset|<sitemapindex/i.test(data.sitemap.body)
     ) {
-      return outcome("pass", "sitemap.xml found and valid.", "", "low");
+      return outcome(
+        "pass",
+        "AI crawlers have a map of every page on your site, so nothing gets missed.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "fail",
-      "No sitemap.xml found at /sitemap.xml.",
+      "There's no map of your site for AI crawlers to follow, so they may miss pages that could get you recommended.",
       "Publish an XML sitemap listing your key pages and reference it from robots.txt.",
       "low",
     );
@@ -186,7 +239,7 @@ const sitemap_fresh: CheckDefinition = {
     if (!data.sitemap || data.sitemap.status !== 200) {
       return outcome(
         "fail",
-        "No sitemap available to check freshness.",
+        "There's no map of your site, so AI crawlers have no way to tell how fresh your content is.",
         "Publish an XML sitemap with <lastmod> dates so crawlers know what changed recently.",
         "low",
       );
@@ -195,7 +248,7 @@ const sitemap_fresh: CheckDefinition = {
     if (lastmods.length === 0) {
       return outcome(
         "partial",
-        "Sitemap exists but has no <lastmod> dates.",
+        "Your site map exists, but doesn't show when pages were last updated — AI crawlers can't tell if your content is current.",
         "Add <lastmod> timestamps to sitemap entries so AI crawlers can prioritize fresh content.",
         "low",
       );
@@ -203,10 +256,15 @@ const sitemap_fresh: CheckDefinition = {
     const freshest = new Date(Math.max(...lastmods.map((d) => d.getTime())));
     const isFresh = Date.now() - freshest.getTime() <= NINETY_DAYS_MS;
     return isFresh
-      ? outcome("pass", `Most recent sitemap entry updated ${freshest.toDateString()}.`, "", "low")
+      ? outcome(
+          "pass",
+          `Your site map shows recent activity (updated ${freshest.toDateString()}), telling AI crawlers your content is current.`,
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          `Most recent sitemap entry is from ${freshest.toDateString()}, over 90 days old.`,
+          `Your site hasn't shown any updates since ${freshest.toDateString()} — over 90 days — so AI engines treat it as lower priority to cite.`,
           "Update your sitemap lastmod dates by re-publishing or touching pages regularly.",
           "med",
         );
@@ -222,7 +280,7 @@ const spa_detection: CheckDefinition = {
     if (!isSpa) {
       return outcome(
         "pass",
-        "Homepage HTML contains real, readable content before JavaScript runs.",
+        "AI crawlers can read your homepage content right away, before any scripts even run.",
         "",
         "low",
       );
@@ -244,19 +302,24 @@ const pagespeed_mobile: CheckDefinition = {
     const ms = data.homepage.fetchMs;
     const kb = Math.round(new TextEncoder().encode(data.homepage.html).length / 1024);
     if (ms <= 1500 && kb <= 500) {
-      return outcome("pass", `Homepage fetched in ${ms}ms (${kb}KB).`, "", "low");
+      return outcome(
+        "pass",
+        "Your site loads quickly on mobile, which AI crawlers and customers both notice.",
+        "",
+        "low",
+      );
     }
     if (ms <= 3500 && kb <= 1500) {
       return outcome(
         "partial",
-        `Homepage fetched in ${ms}ms (${kb}KB) — borderline for mobile.`,
+        "Your site loads a bit slowly on mobile — this can cause AI crawlers to give up before reading everything.",
         "Compress images, defer non-critical scripts, and trim page weight to speed up mobile loads.",
         "med",
       );
     }
     return outcome(
       "fail",
-      `Homepage fetched in ${ms}ms (${kb}KB) — slow for mobile users and crawlers.`,
+      "Your site is slow to load on mobile — AI crawlers and customers may give up before your page finishes loading.",
       "Run a Lighthouse/PageSpeed audit and address render-blocking resources and oversized assets.",
       "high",
     );
@@ -276,7 +339,7 @@ const jsonld_present: CheckDefinition = {
     if (blocks.length > 0) {
       return outcome(
         "pass",
-        `${blocks.length} valid JSON-LD block(s) found on homepage.`,
+        "Your site gives AI engines clear, structured facts about your business — not just paragraphs to guess from.",
         "",
         "low",
       );
@@ -285,14 +348,14 @@ const jsonld_present: CheckDefinition = {
     if (hasTag) {
       return outcome(
         "partial",
-        "A JSON-LD script tag exists but its contents don't parse as valid JSON.",
+        "Your site attempts to give AI engines structured facts about your business, but the format is broken and unreadable.",
         "Fix the JSON syntax in your structured data block — validate with Google's Rich Results Test.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No JSON-LD structured data found on the homepage.",
+      "Your site gives AI engines nothing but plain text to interpret — they have to guess who you are and what you do.",
       "Add JSON-LD structured data (Organization at minimum) so AI engines can extract facts about your business reliably.",
       "med",
     );
@@ -306,11 +369,16 @@ const org_schema: CheckDefinition = {
   run: (data) => {
     const types = jsonLdTypes(extractJsonLdBlocks(allHtml(data)));
     if (types.some((t) => /^organization$/i.test(t))) {
-      return outcome("pass", "Organization schema found in JSON-LD.", "", "low");
+      return outcome(
+        "pass",
+        "AI engines can confirm your business's official name and details directly.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "fail",
-      "No Organization schema found in any fetched page.",
+      "AI engines have no confirmed source for your business's official name, logo, or contact details.",
       "Add an Organization JSON-LD block with your legal name, logo, URL and contact points.",
       "low",
     );
@@ -324,11 +392,16 @@ const faq_schema: CheckDefinition = {
   run: (data) => {
     const types = jsonLdTypes(extractJsonLdBlocks(allHtml(data)));
     if (types.some((t) => /^faqpage$/i.test(t))) {
-      return outcome("pass", "FAQPage schema found.", "", "low");
+      return outcome(
+        "pass",
+        "Your site is set up to have your answers quoted directly inside AI chat responses.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "fail",
-      "No FAQPage schema found on any fetched page.",
+      "Nothing on your site is set up to get quoted directly inside ChatGPT or Perplexity answers.",
       "Add FAQ schema to your most-visited pages — it's one of the highest-leverage ways to get quoted directly by ChatGPT and Perplexity.",
       "med",
     );
@@ -343,11 +416,16 @@ const localbusiness_or_product: CheckDefinition = {
     const types = jsonLdTypes(extractJsonLdBlocks(allHtml(data)));
     const found = types.find((t) => /localbusiness|^product$|^store$|^restaurant$/i.test(t));
     if (found) {
-      return outcome("pass", `${found} schema found.`, "", "low");
+      return outcome(
+        "pass",
+        "AI engines can confirm what your business does and where it operates.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "fail",
-      "No LocalBusiness or Product schema found.",
+      "AI engines can't confirm what your business does or where it operates.",
       "Add LocalBusiness schema (with address + phone) or Product schema for your key offerings.",
       "med",
     );
@@ -361,20 +439,25 @@ const breadcrumb: CheckDefinition = {
   run: (data) => {
     const types = jsonLdTypes(extractJsonLdBlocks(allHtml(data)));
     if (types.some((t) => /^breadcrumblist$/i.test(t))) {
-      return outcome("pass", "BreadcrumbList schema found.", "", "low");
+      return outcome(
+        "pass",
+        "AI engines can see exactly where each page sits within your site.",
+        "",
+        "low",
+      );
     }
     const hasBreadcrumbNav = /aria-label\s*=\s*["']breadcrumb["']/i.test(allHtml(data));
     if (hasBreadcrumbNav) {
       return outcome(
         "partial",
-        "Breadcrumb navigation markup found, but no BreadcrumbList schema.",
+        "Your site shows visitors where they are, but AI engines can't read that structure the same way.",
         "Add BreadcrumbList JSON-LD alongside your visual breadcrumbs.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No breadcrumb markup found.",
+      "AI engines can't tell how your pages relate to each other or where anything sits on your site.",
       "Add breadcrumb navigation with BreadcrumbList schema to reinforce your site hierarchy.",
       "low",
     );
@@ -396,18 +479,23 @@ const title_unique: CheckDefinition = {
     if (missing > 0) {
       return outcome(
         "fail",
-        `${missing} of ${pages.length} fetched pages have no <title> tag.`,
+        `${missing} of ${pages.length} pages on your site have no title at all — AI engines don't know what those pages are about.`,
         "Give every page a unique, descriptive <title> tag.",
         "low",
       );
     }
     const unique = new Set(titles);
     if (unique.size === titles.length) {
-      return outcome("pass", `All ${pages.length} fetched pages have unique titles.`, "", "low");
+      return outcome(
+        "pass",
+        "Every page on your site has its own clear title, so AI engines know exactly what each one covers.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "partial",
-      "Some fetched pages share the same <title>.",
+      "AI can't tell your pages apart, so it cites none of them.",
       "Make each page's title unique and specific to its content.",
       "low",
     );
@@ -423,17 +511,24 @@ const title_length: CheckDefinition = {
     if (!title) {
       return outcome(
         "fail",
-        "Homepage has no <title> tag.",
+        "Your homepage has no title — AI engines and search results don't know what to call your business.",
         "Add a descriptive title tag, 10-60 characters.",
         "low",
       );
     }
     if (title.length >= 10 && title.length <= 60) {
-      return outcome("pass", `Title is ${title.length} characters.`, "", "low");
+      return outcome(
+        "pass",
+        "Your homepage title clearly and concisely says what your business does.",
+        "",
+        "low",
+      );
     }
     return outcome(
       "partial",
-      `Title is ${title.length} characters — ${title.length < 10 ? "too short" : "may get truncated in search/AI results"}.`,
+      title.length < 10
+        ? "Your homepage title is too short to say much about your business."
+        : "Your homepage title is long enough that AI engines and search results may cut it off.",
       "Aim for a 10-60 character title that clearly states who you are and what you offer.",
       "low",
     );
@@ -451,7 +546,7 @@ const meta_desc: CheckDefinition = {
     if (present.length === 0) {
       return outcome(
         "fail",
-        "No meta description found on any fetched page.",
+        "None of your pages describe themselves to AI engines — they have to guess what each page is about.",
         "Write a unique 50-160 character meta description for every key page.",
         "low",
       );
@@ -460,14 +555,14 @@ const meta_desc: CheckDefinition = {
     if (wellSized.length === present.length && present.length === pages.length) {
       return outcome(
         "pass",
-        `All ${pages.length} pages have well-sized meta descriptions.`,
+        "Every page describes itself clearly, so AI engines know what each one is about before they even open it.",
         "",
         "low",
       );
     }
     return outcome(
       "partial",
-      `${present.length} of ${pages.length} fetched pages have a meta description.`,
+      "Only some of your pages describe themselves to AI engines — the rest are guesswork.",
       "Add meta descriptions (50-160 characters) to every page missing one.",
       "low",
     );
@@ -482,19 +577,24 @@ const canonical: CheckDefinition = {
     const pages = allPages(data);
     const withCanonical = pages.filter((p) => extractCanonical(p.html));
     if (withCanonical.length === pages.length) {
-      return outcome("pass", `All ${pages.length} fetched pages set a canonical URL.`, "", "low");
+      return outcome(
+        "pass",
+        "Every page clearly tells AI engines which version is the real one, avoiding duplicate confusion.",
+        "",
+        "low",
+      );
     }
     if (withCanonical.length > 0) {
       return outcome(
         "partial",
-        `${withCanonical.length} of ${pages.length} fetched pages set a canonical URL.`,
+        "Some of your pages don't say which version is the real one, so AI engines may get confused about duplicates.",
         "Add a self-referencing canonical <link> tag to every page.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No canonical tags found on any fetched page.",
+      "AI engines can't tell which version of your pages is the real one, so they may ignore or mix up your content.",
       "Add canonical <link> tags to avoid duplicate-content ambiguity for crawlers.",
       "low",
     );
@@ -510,19 +610,24 @@ const og_tags: CheckDefinition = {
     const tags = ["og:title", "og:description", "og:image"];
     const present = tags.filter((t) => extractMetaContent(html, t));
     if (present.length === tags.length) {
-      return outcome("pass", "og:title, og:description and og:image all present.", "", "low");
+      return outcome(
+        "pass",
+        "Your pages show a proper preview with title, description and image whenever they're shared or referenced.",
+        "",
+        "low",
+      );
     }
     if (present.length > 0) {
       return outcome(
         "partial",
-        `Only ${present.join(", ")} present.`,
+        "Some of your pages show a broken or incomplete preview when shared or referenced.",
         "Add the missing Open Graph tags so links preview correctly when shared or cited.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No Open Graph tags found on the homepage.",
+      "When your pages are shared or referenced, they show up blank or broken instead of a proper preview.",
       "Add og:title, og:description and og:image meta tags.",
       "low",
     );
@@ -542,7 +647,7 @@ const informational_pages: CheckDefinition = {
     if (substantial.length >= 2) {
       return outcome(
         "pass",
-        `${substantial.length} additional pages have substantial content.`,
+        "Your site gives AI engines real, substantial content beyond just the homepage to learn from.",
         "",
         "low",
       );
@@ -550,14 +655,14 @@ const informational_pages: CheckDefinition = {
     if (substantial.length === 1) {
       return outcome(
         "partial",
-        "Only one additional page has substantial content.",
+        "Your site has barely anything beyond the homepage — AI engines have very little to learn from or cite.",
         "Publish more informational pages (services, about, FAQs) with real content, not just the homepage.",
         "med",
       );
     }
     return outcome(
       "fail",
-      "No additional pages with substantial content were found.",
+      "Your site has almost nothing beyond the homepage for AI engines to learn from or cite.",
       "Build out informational pages beyond the homepage so AI engines have more to cite.",
       "high",
     );
@@ -576,10 +681,15 @@ const blog_exists: CheckDefinition = {
     const hasBlog =
       links.some((l) => BLOG_PATH_RE.test(l.href)) || sitemapUrls.some((u) => BLOG_PATH_RE.test(u));
     return hasBlog
-      ? outcome("pass", "A blog/news section is linked from the site.", "", "low")
+      ? outcome(
+          "pass",
+          "Your site regularly publishes content that answers the questions customers actually ask AI.",
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          "No blog or news section detected.",
+          "Nothing on your site answers the questions customers actually ask AI.",
           "Publish a blog or news section — fresh, citable content is a strong AI-visibility signal.",
           "high",
         );
@@ -600,7 +710,7 @@ const blog_fresh_90d: CheckDefinition = {
     if (!hasBlog) {
       return outcome(
         "fail",
-        "No blog section exists to check for freshness.",
+        "Nothing on your site answers the questions customers actually ask AI.",
         "Publish a blog and update it regularly — content updated within the last 90 days signals ongoing relevance.",
         "high",
       );
@@ -608,7 +718,7 @@ const blog_fresh_90d: CheckDefinition = {
     if (!data.sitemap) {
       return outcome(
         "partial",
-        "Blog section exists, but no sitemap is available to verify freshness.",
+        "Your site publishes content, but there's no way to tell AI engines how recently it was updated.",
         "Add sitemap <lastmod> entries for blog posts so freshness can be verified.",
         "low",
       );
@@ -617,7 +727,7 @@ const blog_fresh_90d: CheckDefinition = {
     if (lastmods.length === 0) {
       return outcome(
         "partial",
-        "Blog section exists, but sitemap has no <lastmod> dates.",
+        "Your site publishes content, but there's no way to tell AI engines how recently it was updated.",
         "Add <lastmod> dates to sitemap entries for blog posts.",
         "low",
       );
@@ -625,10 +735,15 @@ const blog_fresh_90d: CheckDefinition = {
     const freshest = new Date(Math.max(...lastmods.map((d) => d.getTime())));
     const isFresh = Date.now() - freshest.getTime() <= NINETY_DAYS_MS;
     return isFresh
-      ? outcome("pass", `Most recent content update: ${freshest.toDateString()}.`, "", "low")
+      ? outcome(
+          "pass",
+          `Your content is updated regularly (most recently ${freshest.toDateString()}), signalling to AI engines that your business is active.`,
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          `Most recent content update was ${freshest.toDateString()}, over 90 days ago.`,
+          `Your content hasn't been updated since ${freshest.toDateString()} — over 90 days — which AI engines can read as a sign your business may be inactive.`,
           "Publish new blog content at least quarterly to stay fresh in AI training and retrieval.",
           "med",
         );
@@ -645,7 +760,7 @@ const heading_hierarchy: CheckDefinition = {
     if (h1Count === 0) {
       return outcome(
         "fail",
-        "Homepage has no H1 heading.",
+        "Your homepage doesn't clearly state what it's about at a glance — AI engines have to work harder to figure it out.",
         "Add exactly one H1 that clearly states the page's main topic.",
         "low",
       );
@@ -653,14 +768,14 @@ const heading_hierarchy: CheckDefinition = {
     if (h1Count === 1) {
       return outcome(
         "pass",
-        "Homepage has exactly one H1, with supporting subheadings.",
+        "Your homepage clearly states its main topic, with everything else organized underneath it.",
         "",
         "low",
       );
     }
     return outcome(
       "partial",
-      `Homepage has ${h1Count} H1 headings.`,
+      "Your homepage states several competing topics at once, so AI engines can't tell which one matters most.",
       "Use a single H1 per page and demote the rest to H2/H3.",
       "low",
     );
@@ -677,19 +792,24 @@ const author_attribution: CheckDefinition = {
     const hasBylineText = /\b(by|written by|author)\s*[:-]?\s*[A-Z][a-z]+/.test(visibleText(html));
     const hasAuthorSchema = jsonLdTypes(extractJsonLdBlocks(html)).some((t) => /^person$/i.test(t));
     if (hasRelAuthor || hasAuthorSchema) {
-      return outcome("pass", "Author attribution found via markup or schema.", "", "low");
+      return outcome(
+        "pass",
+        "Your content is clearly credited to a real person, which AI engines weigh when judging trustworthiness.",
+        "",
+        "low",
+      );
     }
     if (hasBylineText) {
       return outcome(
         "partial",
-        "Byline-like text found, but no rel=author or Person schema.",
+        "Your content mentions an author by name, but nothing formally confirms who wrote it.",
         'Mark up author bylines with rel="author" or Person schema for stronger attribution signals.',
         "low",
       );
     }
     return outcome(
       "fail",
-      "No author attribution found on fetched pages.",
+      "None of your content is credited to a real person — AI engines have less reason to trust it as an authoritative source.",
       "Add author bylines to content pages — E-E-A-T signals matter for AI trust in cited sources.",
       "med",
     );
@@ -707,10 +827,15 @@ const about_page: CheckDefinition = {
   run: (data) => {
     const found = allLinks(data).find((l) => ABOUT_RE.test(l.href) || ABOUT_RE.test(l.text));
     return found
-      ? outcome("pass", `About page linked (${found.href}).`, "", "low")
+      ? outcome(
+          "pass",
+          "Visitors and AI engines can find a clear page explaining who runs your business and its story.",
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          "No About page found.",
+          "No credible source on your site says who runs this business.",
           "Publish an About page covering who runs the business, its history and mission.",
           "low",
         );
@@ -724,10 +849,15 @@ const contact_visible: CheckDefinition = {
   run: (data) => {
     const found = allLinks(data).find((l) => CONTACT_RE.test(l.href) || CONTACT_RE.test(l.text));
     return found
-      ? outcome("pass", `Contact page linked (${found.href}).`, "", "low")
+      ? outcome(
+          "pass",
+          "Anyone — customer or AI engine — can easily find how to get in touch with your business.",
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          "No Contact page found.",
+          "There's no clear way for customers or AI engines to find out how to reach your business.",
           "Add a clearly linked Contact page with your business address and details.",
           "low",
         );
@@ -743,19 +873,24 @@ const phone_email_visible: CheckDefinition = {
     const hasMailto = /href\s*=\s*["']mailto:/i.test(html);
     const hasTel = /href\s*=\s*["']tel:/i.test(html) || phoneMatches(visibleText(html)).length > 0;
     if (hasMailto && hasTel) {
-      return outcome("pass", "Both phone and email contact details are visible.", "", "low");
+      return outcome(
+        "pass",
+        "Both a phone number and email are visible, so AI engines can confidently point customers to reach you.",
+        "",
+        "low",
+      );
     }
     if (hasMailto || hasTel) {
       return outcome(
         "partial",
-        `Only ${hasMailto ? "email" : "phone"} contact details found.`,
+        `Only ${hasMailto ? "an email address" : "a phone number"} is visible on your site, so AI engines have limited contact info to surface.`,
         "Show both a phone number and email address so AI engines can surface direct contact info.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No visible phone number or email address found.",
+      "No phone number or email is visible anywhere on your site, so AI engines can't surface a way to reach you.",
       "Add a visible phone number and email address, ideally in the header or footer of every page.",
       "low",
     );
@@ -771,19 +906,24 @@ const policies_present: CheckDefinition = {
     const hasPrivacy = links.some((l) => PRIVACY_RE.test(l.href) || PRIVACY_RE.test(l.text));
     const hasTerms = links.some((l) => TERMS_RE.test(l.href) || TERMS_RE.test(l.text));
     if (hasPrivacy && hasTerms) {
-      return outcome("pass", "Both privacy policy and terms are linked.", "", "low");
+      return outcome(
+        "pass",
+        "Your site publishes both a privacy policy and terms of service, reinforcing that this is a legitimate business.",
+        "",
+        "low",
+      );
     }
     if (hasPrivacy || hasTerms) {
       return outcome(
         "partial",
-        `Only ${hasPrivacy ? "a privacy policy" : "terms"} found.`,
+        `Your site only publishes ${hasPrivacy ? "a privacy policy" : "terms of service"} — the missing one is a trust gap for AI engines.`,
         "Publish and link both a Privacy Policy and Terms of Service.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No privacy policy or terms page found.",
+      "Your site has no privacy policy or terms — their absence is a red flag for AI engines evaluating trustworthiness.",
       "Publish a Privacy Policy and Terms of Service — their absence is a trust red flag for AI evaluators.",
       "low",
     );
@@ -804,10 +944,15 @@ const google_business: CheckDefinition = {
       /maps\.google\.[a-z.]+|goo\.gl\/maps|g\.page\//i.test(html) ||
       /<iframe[^>]+google\.com\/maps/i.test(html);
     return found
-      ? outcome("pass", "A Google Maps / Business Profile link or embed was found.", "", "low")
+      ? outcome(
+          "pass",
+          "AI engines can cross-check that your business is real and locally verified through your Google listing.",
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          "No Google Business Profile link or map embed found.",
+          "AI can't cross-check that your business is real and locally verified.",
           "Claim your Google Business Profile and embed your Maps location or link to it from the site.",
           "low",
         );
@@ -824,14 +969,14 @@ const directory_presence: CheckDefinition = {
     if (found.length > 0) {
       return outcome(
         "pass",
-        `Linked to: ${Array.from(new Set(found.map((f) => new URL(f.href).hostname))).join(", ")}.`,
+        "Your business is listed on major Indian directories, giving AI engines more places to confirm you're real.",
         "",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No links to Indian business directories (Justdial, IndiaMART, Sulekha, TradeIndia) found.",
+      "Your business isn't listed on any major Indian business directories, so AI engines have fewer places to confirm you're real.",
       "List your business on major Indian directories and link to those listings from your site.",
       "med",
     );
@@ -845,10 +990,15 @@ const linkedin_page: CheckDefinition = {
   run: (data) => {
     const found = allLinks(data).find((l) => /linkedin\.com\/company\//i.test(l.href));
     return found
-      ? outcome("pass", `LinkedIn company page linked (${found.href}).`, "", "low")
+      ? outcome(
+          "pass",
+          "Your business has a LinkedIn presence AI engines can use to confirm it's a real company.",
+          "",
+          "low",
+        )
       : outcome(
           "fail",
-          "No LinkedIn company page linked.",
+          "Your business has no LinkedIn presence, so AI engines have one less place to confirm it's a real company.",
           "Create a LinkedIn company page and link to it from your site footer.",
           "low",
         );
@@ -874,7 +1024,7 @@ const nap_consistency: CheckDefinition = {
     if (repeated.length > 0) {
       return outcome(
         "pass",
-        "The same phone number appears consistently across multiple pages.",
+        "The same contact number appears consistently across your site, giving AI engines a reliable detail to trust.",
         "",
         "low",
       );
@@ -882,14 +1032,14 @@ const nap_consistency: CheckDefinition = {
     if (phoneCounts.size > 0) {
       return outcome(
         "partial",
-        "A phone number was found, but it doesn't repeat consistently across pages.",
+        "A contact number appears on your site, but not consistently — AI engines may not trust which one is current.",
         "Display the same business phone number and address consistently across every page.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No consistent phone number found across fetched pages.",
+      "No consistent contact number appears across your site, so AI engines can't confirm a single reliable way to reach you.",
       "Add a consistent Name/Address/Phone block, ideally in the site footer, on every page.",
       "low",
     );
@@ -905,19 +1055,24 @@ const gst_or_legal_identity: CheckDefinition = {
     const hasGst = /\bGSTIN\b|\b\d{2}[A-Z]{5}\d{4}[A-Z]\d[Z][A-Z\d]\b/i.test(text);
     const hasLegalEntity = /\b(private limited|pvt\.?\s*ltd|llp|opc)\b/i.test(text);
     if (hasGst) {
-      return outcome("pass", "A GSTIN was found on the site.", "", "low");
+      return outcome(
+        "pass",
+        "Your business's tax registration is disclosed, a strong trust signal for AI engines evaluating Indian businesses.",
+        "",
+        "low",
+      );
     }
     if (hasLegalEntity) {
       return outcome(
         "partial",
-        "A legal entity name (Pvt Ltd/LLP/OPC) is disclosed, but no GSTIN was found.",
+        "Your business names its legal entity, but doesn't disclose its tax registration — a trust signal AI engines look for.",
         "Publish your GSTIN, typically in the footer or a legal/about page, to reinforce legitimacy.",
         "low",
       );
     }
     return outcome(
       "fail",
-      "No GSTIN or registered legal entity name found.",
+      "Your business's legal registration isn't disclosed anywhere, which weakens trust signals for AI engines evaluating Indian businesses.",
       "Disclose your registered legal entity name and GSTIN — this is a strong trust signal for Indian businesses.",
       "low",
     );
