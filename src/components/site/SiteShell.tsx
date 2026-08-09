@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { ArrowRight, Facebook, Instagram, Linkedin, Twitter, Menu, X } from "lucide-react";
 
 import { Logo } from "./Logo";
 
 function NavBar() {
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+  const navLinks: Array<[string, string]> = [
+    ["Home", "/#top"],
+    ["How it works", "/#how"],
+    ["Score", "/#score"],
+    ["Sample report", "/#sample"],
+    ["Benefits", "/#benefits"],
+    ["Features", "/#features"],
+    ["FAQ", "/#faq"],
+    ["Blog", "/blog"],
+    ["Contact", "/#contact"],
+  ];
   return (
     <header
       className={`sticky top-0 z-40 border-b transition-colors ${
@@ -21,18 +33,8 @@ function NavBar() {
         <a href="/" className="flex items-center" aria-label="Seenzo home">
           <Logo />
         </a>
-        <nav className="hidden items-center gap-8 md:flex">
-          {[
-            ["Home", "/#top"],
-            ["How it works", "/#how"],
-            ["Score", "/#score"],
-            ["Sample report", "/#sample"],
-            ["Benefits", "/#benefits"],
-            ["Features", "/#features"],
-            ["FAQ", "/#faq"],
-            ["Blog", "/blog"],
-            ["Contact", "/#contact"],
-          ].map(([label, href]) => (
+        <nav className="hidden items-center gap-8 lg:flex">
+          {navLinks.map(([label, href]) => (
             <a
               key={href}
               href={href}
@@ -42,14 +44,41 @@ function NavBar() {
             </a>
           ))}
         </nav>
-        <a
-          href="/#scan"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
-          Free Scan
-          <ArrowRight className="h-3.5 w-3.5" />
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="/#scan"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Free Scan
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-lg p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
+      {menuOpen && (
+        <div className="border-t border-slate-200 bg-white px-5 py-4 lg:hidden">
+          <nav className="flex flex-col gap-3">
+            {navLinks.map(([label, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="text-[15px] font-medium text-slate-600 transition hover:text-ink"
+                onClick={() => setMenuOpen(false)}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

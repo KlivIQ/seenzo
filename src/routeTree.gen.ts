@@ -9,41 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as GlossaryRouteImport } from './routes/glossary'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as GlossaryRouteImport } from './routes/glossary'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as RSlugRouteImport } from './routes/r.$slug'
-import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
-import { Route as ApiTrackRouteImport } from './routes/api/track'
-import { Route as ApiScanRequestRouteImport } from './routes/api/scan-request'
-import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as ApiScanStatusSlugRouteImport } from './routes/api/scan-status.$slug'
+import { Route as ApiInngestRouteImport } from './routes/api/inngest'
+import { Route as ApiScanRequestRouteImport } from './routes/api/scan-request'
+import { Route as ApiTrackRouteImport } from './routes/api/track'
+import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
+import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as ApiAdminLeadsRouteImport } from './routes/api/admin/leads'
+import { Route as ApiScanStatusSlugRouteImport } from './routes/api/scan-status.$slug'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GlossaryRoute = GlossaryRouteImport.update({
-  id: '/glossary',
-  path: '/glossary',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -51,14 +36,24 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
+const GlossaryRoute = GlossaryRouteImport.update({
+  id: '/glossary',
+  path: '/glossary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -66,24 +61,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RSlugRoute = RSlugRouteImport.update({
-  id: '/r/$slug',
-  path: '/r/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTrackRoute = ApiTrackRouteImport.update({
-  id: '/api/track',
-  path: '/api/track',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiScanRequestRoute = ApiScanRequestRouteImport.update({
-  id: '/api/scan-request',
-  path: '/api/scan-request',
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiInngestRoute = ApiInngestRouteImport.update({
@@ -91,19 +71,39 @@ const ApiInngestRoute = ApiInngestRouteImport.update({
   path: '/api/inngest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/admin/login',
-  path: '/admin/login',
+const ApiScanRequestRoute = ApiScanRequestRouteImport.update({
+  id: '/api/scan-request',
+  path: '/api/scan-request',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiScanStatusSlugRoute = ApiScanStatusSlugRouteImport.update({
-  id: '/api/scan-status/$slug',
-  path: '/api/scan-status/$slug',
+const ApiTrackRoute = ApiTrackRouteImport.update({
+  id: '/api/track',
+  path: '/api/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RSlugRoute = RSlugRouteImport.update({
+  id: '/r/$slug',
+  path: '/r/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminLeadsRoute = ApiAdminLeadsRouteImport.update({
   id: '/api/admin/leads',
   path: '/api/admin/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiScanStatusSlugRoute = ApiScanStatusSlugRouteImport.update({
+  id: '/api/scan-status/$slug',
+  path: '/api/scan-status/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -240,32 +240,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/glossary': {
-      id: '/glossary'
-      path: '/glossary'
-      fullPath: '/glossary'
-      preLoaderRoute: typeof GlossaryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -275,18 +254,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/blog/': {
-      id: '/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
+    '/glossary': {
+      id: '/glossary'
+      path: '/glossary'
+      fullPath: '/glossary'
+      preLoaderRoute: typeof GlossaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -296,32 +289,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/r/$slug': {
-      id: '/r/$slug'
-      path: '/r/$slug'
-      fullPath: '/r/$slug'
-      preLoaderRoute: typeof RSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/track': {
-      id: '/api/track'
-      path: '/api/track'
-      fullPath: '/api/track'
-      preLoaderRoute: typeof ApiTrackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/scan-request': {
-      id: '/api/scan-request'
-      path: '/api/scan-request'
-      fullPath: '/api/scan-request'
-      preLoaderRoute: typeof ApiScanRequestRouteImport
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/inngest': {
@@ -331,18 +303,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInngestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/admin/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
+    '/api/scan-request': {
+      id: '/api/scan-request'
+      path: '/api/scan-request'
+      fullPath: '/api/scan-request'
+      preLoaderRoute: typeof ApiScanRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/scan-status/$slug': {
-      id: '/api/scan-status/$slug'
-      path: '/api/scan-status/$slug'
-      fullPath: '/api/scan-status/$slug'
-      preLoaderRoute: typeof ApiScanStatusSlugRouteImport
+    '/api/track': {
+      id: '/api/track'
+      path: '/api/track'
+      fullPath: '/api/track'
+      preLoaderRoute: typeof ApiTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$slug': {
+      id: '/r/$slug'
+      path: '/r/$slug'
+      fullPath: '/r/$slug'
+      preLoaderRoute: typeof RSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/leads': {
@@ -350,6 +343,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin/leads'
       fullPath: '/api/admin/leads'
       preLoaderRoute: typeof ApiAdminLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/scan-status/$slug': {
+      id: '/api/scan-status/$slug'
+      path: '/api/scan-status/$slug'
+      fullPath: '/api/scan-status/$slug'
+      preLoaderRoute: typeof ApiScanStatusSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
