@@ -202,7 +202,7 @@ export function ScanForm({ compact = false, className }: Props) {
       noValidate
     >
       <div className={cn("grid gap-4", compact ? "sm:grid-cols-2" : "sm:grid-cols-2")}>
-        <Field label="Name / Business name" required error={errors.nameOrBusiness?.message}>
+        <Field label="Name / Business name" error={errors.nameOrBusiness?.message}>
           <input
             {...register("nameOrBusiness")}
             placeholder="Ravi Kumar, Kumar Textiles"
@@ -212,7 +212,7 @@ export function ScanForm({ compact = false, className }: Props) {
             className={cls(!!errors.nameOrBusiness)}
           />
         </Field>
-        <Field label="Email" required error={errors.email?.message}>
+        <Field label="Email" error={errors.email?.message}>
           <input
             {...register("email")}
             type="email"
@@ -223,11 +223,7 @@ export function ScanForm({ compact = false, className }: Props) {
             className={cls(!!errors.email)}
           />
         </Field>
-        <Field
-          label="Phone / WhatsApp"
-          error={errors.phone?.message}
-          hint="Optional — we'll send your report by WhatsApp too if provided."
-        >
+        <Field label="Phone / WhatsApp" error={errors.phone?.message}>
           <input
             {...register("phone")}
             type="tel"
@@ -237,7 +233,7 @@ export function ScanForm({ compact = false, className }: Props) {
             className={cls(!!errors.phone)}
           />
         </Field>
-        <Field label="Website URL" required error={errors.website?.message}>
+        <Field label="Website URL" error={errors.website?.message}>
           <input
             {...register("website")}
             placeholder="yourbusiness.in"
