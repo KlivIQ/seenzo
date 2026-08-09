@@ -174,9 +174,10 @@ function Hero() {
               Built in India · For Indian businesses
             </div>
           </div>
-          <h2 className="mt-6 font-display text-[42px] leading-[1.05] font-extrabold tracking-tight text-ink sm:text-[56px] lg:text-[64px]">
-            See how <span className="text-brand">AI</span> sees
-            <br /> your business.
+          <h2 className="mt-6 font-display text-[38px] leading-[1.1] font-extrabold tracking-tight text-ink sm:text-[48px] lg:text-[54px]">
+            Search is moving to <span className="text-brand">AI</span>.
+            <br /> Can it find your business?
+            <br /> Do a 30-second check.
           </h2>
         </div>
 
@@ -191,8 +192,8 @@ function Hero() {
         {/* Details: subtitle + bullets + buttons + trust */}
         <div className="rise-in order-3 lg:col-span-1">
           <p className="max-w-xl text-lg text-slate-600">
-            Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix list.
-            Delivered by email in minutes.
+            Get your AI Visibility Score, engine-by-engine breakdown and prioritised fix list —
+            right here on this page in about 30 seconds.
           </p>
           <ul className="mt-6 flex flex-col gap-3 text-base text-slate-600">
             {[
@@ -229,14 +230,17 @@ function Hero() {
           </div>
 
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-            {["No contracts", "No 12-month lock-ins", "Report in minutes", "100% free scan"].map(
-              (t) => (
-                <li key={t} className="inline-flex items-center gap-1.5">
-                  <Check className="h-4 w-4 text-brand" />
-                  {t}
-                </li>
-              ),
-            )}
+            {[
+              "No contracts",
+              "No 12-month lock-ins",
+              "Results in 30 seconds",
+              "100% free scan",
+            ].map((t) => (
+              <li key={t} className="inline-flex items-center gap-1.5">
+                <Check className="h-4 w-4 text-brand" />
+                {t}
+              </li>
+            ))}
           </ul>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { renderReportEmail } from "@/lib/email/report-email";
-import { computePriorityFixes } from "@/lib/scoring/fixes";
+import { computeIssues } from "@/lib/scoring/fixes";
 import { getResend } from "@/lib/server/resend";
 import { getSupabaseServer } from "@/lib/supabase";
 
@@ -14,7 +14,7 @@ export const deliverReport = getInngest().createFunction(
   async ({ event, step }) => {
     const { leadId, scanId, reportSlug } = event.data as ReportReadyEventData;
 
-    const { lead, scan, fixes } = await step.run("load-data", async () => {
+    const { lead, scan, issues } = await step.run("load-data", async () => {
       const supabase = getSupabaseServer();
 
       const { data: lead, error: leadError } = await supabase
@@ -35,11 +35,11 @@ export const deliverReport = getInngest().createFunction(
 
       const { data: checks, error: checksError } = await supabase
         .from("scan_checks")
-        .select("check_id, result, fix_text, effort")
+        .select("check_id, result, evidence")
         .eq("scan_id", scanId);
       if (checksError) throw new Error(`Failed to load scan checks: ${checksError.message}`);
 
-      return { lead, scan, fixes: computePriorityFixes(checks ?? [], 3) };
+      return { lead, scan, issues: computeIssues(checks ?? [], 3) };
     });
 
     const reportUrl = `${REPORT_BASE_URL}/${reportSlug}`;
@@ -55,7 +55,7 @@ export const deliverReport = getInngest().createFunction(
           businessName: lead.business_name,
           score: scan.score ?? 0,
           grade: scan.grade ?? "F",
-          fixes,
+          issues,
           reportUrl,
         }),
       });

@@ -1,24 +1,13 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import {
-  Calendar,
-  Check,
-  ChevronDown,
-  Download,
-  ExternalLink,
-  Globe,
-  Minus,
-  Phone,
-  X,
-} from "lucide-react";
+import { Calendar, Download, ExternalLink, Globe, Phone } from "lucide-react";
 
 import { Logo } from "@/components/site/Logo";
 import kliviqLogo from "@/assets/kliviq-logo.png.asset.json";
 import { loadReportBySlug, trackReportView, type ReportViewData } from "@/lib/server/report";
 
 type Status = "pass" | "partial" | "fail";
-type Effort = "Quick Win" | "2–3 Days" | "1 Week";
 
 const getReportPageData = createServerFn({ method: "GET" })
   .validator((slug: string) => slug)
@@ -71,35 +60,6 @@ function statusBarColor(s: Status) {
     partial: "bg-[#f59e0b]",
     fail: "bg-rose-500",
   }[s];
-}
-
-function StatusIcon({ s }: { s: Status }) {
-  const base = "inline-flex h-5 w-5 items-center justify-center rounded-full";
-  if (s === "pass")
-    return (
-      <span className={`${base} bg-emerald-100 text-emerald-700`}>
-        <Check className="h-3 w-3" />
-      </span>
-    );
-  if (s === "partial")
-    return (
-      <span className={`${base} bg-amber-100 text-amber-700`}>
-        <Minus className="h-3 w-3" />
-      </span>
-    );
-  return (
-    <span className={`${base} bg-rose-100 text-rose-700`}>
-      <X className="h-3 w-3" />
-    </span>
-  );
-}
-
-function effortBadge(e: Effort) {
-  return {
-    "Quick Win": "border-emerald-200 bg-emerald-50 text-emerald-700",
-    "2–3 Days": "border-amber-200 bg-amber-50 text-amber-700",
-    "1 Week": "border-sky-200 bg-sky-50 text-sky-700",
-  }[e];
 }
 
 function Watermark() {
@@ -181,10 +141,8 @@ function ReportPage() {
   }
 
   const report: ReportViewData = result.report;
-  const grouped = report.categories.map((cat) => ({
-    ...cat,
-    checks: report.checks.filter((c) => c.cat === cat.key),
-  }));
+  const topIssues = report.issues.slice(0, 5);
+  const remainingIssues = report.issues.slice(5);
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#0f172a] antialiased">
@@ -303,32 +261,24 @@ function ReportPage() {
           <Watermark />
         </section>
 
-        {/* Priority fixes */}
+        {/* Top issues */}
         <section className="relative mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="font-display text-xl font-bold">Top 5 priority fixes</h2>
-          <p className="mt-1 text-sm text-slate-600">Highest impact per hour of effort.</p>
+          <h2 className="font-display text-xl font-bold">Top 5 issues found</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            The highest-impact gaps in how AI engines see your business.
+          </p>
           <ol className="mt-6 space-y-4">
-            {report.fixes.map((f, i) => (
+            {topIssues.map((issue, i) => (
               <li
-                key={i}
+                key={issue.title}
                 className="flex gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f59e0b] font-display text-base font-bold text-white">
                   {i + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-display text-base font-bold">{f.title}</h3>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${effortBadge(f.effort)}`}
-                    >
-                      {f.effort}
-                    </span>
-                    <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                      +{f.impact} pts
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{f.desc}</p>
+                  <h3 className="font-display text-base font-bold">{issue.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-700">{issue.evidence}</p>
                 </div>
               </li>
             ))}
@@ -336,51 +286,36 @@ function ReportPage() {
           <Watermark />
         </section>
 
-        {/* Projected score */}
-        <section className="relative mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="font-display text-xl font-bold">Projected score after fixes</h2>
-          <div className="mt-6 grid grid-cols-3 items-center gap-4 text-center">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-widest text-slate-600">
-                Today
-              </div>
-              <div className="mt-2 font-display text-5xl font-extrabold tabular-nums text-slate-700">
-                {report.score}
-              </div>
-              <div
-                className={`mt-2 inline-flex items-center justify-center rounded-md px-2 py-0.5 text-xs font-bold ${gradeBadgeClass(report.grade)}`}
-              >
-                Grade {report.grade}
-              </div>
-            </div>
-            <div className="text-4xl text-[#f59e0b]">→</div>
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-widest text-[#f59e0b]">
-                After fixes
-              </div>
-              <div className="mt-2 font-display text-5xl font-extrabold tabular-nums text-[#f59e0b]">
-                {report.projected}
-              </div>
-              <div className="mt-2 inline-flex items-center justify-center rounded-md bg-[#10b981] px-2 py-0.5 text-xs font-bold text-white">
-                Grade B
-              </div>
-            </div>
-          </div>
-          <p className="mt-6 text-center text-sm text-slate-600">
-            Implementing the 5 fixes above would move you from bottom third to top quartile in AI
-            visibility.
-          </p>
-          <Watermark />
-        </section>
+        {/* Remaining issues */}
+        {remainingIssues.length > 0 && (
+          <section className="relative mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="font-display text-xl font-bold">Issues to be fixed</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              The rest of what's holding back your AI visibility.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {remainingIssues.map((issue) => (
+                <li
+                  key={issue.title}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <h3 className="font-display text-sm font-bold">{issue.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{issue.evidence}</p>
+                </li>
+              ))}
+            </ul>
+            <Watermark />
+          </section>
+        )}
 
         {/* CTA */}
         <section className="no-print relative mt-6 overflow-hidden rounded-2xl border border-emerald-100 bg-[#ecfdf5] p-8 sm:p-10">
-          <h2 className="font-display text-2xl font-extrabold sm:text-3xl">
-            Want us to fix these for you?
-          </h2>
+          <h2 className="font-display text-2xl font-extrabold sm:text-3xl">Ready to fix these?</h2>
           <p className="mt-2 max-w-2xl text-slate-700">
-            Our team at KlivIQ implements these fixes for Indian businesses. Book a free 20-min
-            call.
+            These are the specific gaps holding your AI visibility back. Fixing them involves
+            technical changes to your site's code and structured data — this is exactly what we do
+            for Indian businesses at KlivIQ. Book a free 20-minute call and we'll walk you through
+            your complete fix plan.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a
@@ -414,48 +349,6 @@ function ReportPage() {
           >
             <img src={kliviqLogo.url} alt="KlivIQ" className="h-8 w-auto" />
           </a>
-          <Watermark />
-        </section>
-
-        {/* Appendix */}
-        <section className="relative mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="font-display text-xl font-bold">Full check appendix</h2>
-          <p className="mt-1 text-sm text-slate-600">All 30 checks with evidence.</p>
-          <div className="mt-6 space-y-3">
-            {grouped.map((g) => (
-              <details
-                key={g.key}
-                className="group rounded-xl border border-slate-200 bg-slate-50 open:bg-white print:open"
-                open
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className={`h-2.5 w-2.5 rounded-full ${statusBarColor(g.status)}`} />
-                    <span className="font-display font-bold">{g.key}</span>
-                    <span className="text-sm text-slate-600">{g.score}/100</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-slate-500 transition group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-slate-200 px-4 py-3">
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {g.checks.map((c, i) => (
-                        <tr key={i} className="border-b border-slate-100 last:border-0">
-                          <td className="w-6 py-2.5 pr-3 align-top">
-                            <StatusIcon s={c.status} />
-                          </td>
-                          <td className="py-2.5 pr-4 align-top font-medium text-[#0f172a]">
-                            {c.name}
-                          </td>
-                          <td className="py-2.5 align-top text-slate-600">{c.evidence}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
-            ))}
-          </div>
           <Watermark />
         </section>
       </main>

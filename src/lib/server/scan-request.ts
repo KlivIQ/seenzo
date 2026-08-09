@@ -16,7 +16,7 @@ export type ScanRequestInput = {
   name: string;
   business: string;
   email: string;
-  phone: string;
+  phone?: string;
   website: string;
 };
 
@@ -89,7 +89,7 @@ export async function handleScanRequest(
       name,
       business_name: business,
       email,
-      phone,
+      phone: phone ?? "",
       website_url: website,
       status: "scanning",
       heat_score: 0,

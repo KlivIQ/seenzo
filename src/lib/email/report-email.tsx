@@ -1,7 +1,7 @@
 import { Button, Hr, Link, Section, Text } from "@react-email/components";
 import { render } from "@react-email/render";
 
-import type { PriorityFix } from "@/lib/scoring/fixes";
+import type { ReportIssue } from "@/lib/scoring/fixes";
 import type { ScanGrade } from "@/lib/types/database";
 
 import { BRAND, EmailShell } from "./brand";
@@ -22,7 +22,7 @@ export interface ReportEmailProps {
   businessName: string;
   score: number;
   grade: ScanGrade;
-  fixes: PriorityFix[];
+  issues: ReportIssue[];
   reportUrl: string;
 }
 
@@ -31,7 +31,7 @@ export function ReportEmail({
   businessName,
   score,
   grade,
-  fixes,
+  issues,
   reportUrl,
 }: ReportEmailProps) {
   return (
@@ -76,17 +76,17 @@ export function ReportEmail({
         </Text>
 
         <Text style={{ margin: "0 0 8px", fontSize: "15px", fontWeight: 700, color: BRAND.slate }}>
-          Your top {fixes.length} fixes:
+          Your top {issues.length} issues:
         </Text>
-        {fixes.map((fix, i) => (
+        {issues.map((issue, i) => (
           <Text
-            key={fix.title}
+            key={issue.title}
             style={{ margin: "0 0 10px", fontSize: "14px", lineHeight: "20px", color: "#334155" }}
           >
             <span style={{ fontWeight: 700, color: BRAND.slate }}>
-              {i + 1}. {fix.title}
+              {i + 1}. {issue.title}
             </span>{" "}
-            — {fix.desc}
+            — {issue.evidence}
           </Text>
         ))}
 

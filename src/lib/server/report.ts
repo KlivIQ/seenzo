@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 
 import { CATEGORY_ORDER, CATEGORY_LABELS, categoryStatus } from "@/lib/scoring/categories";
-import { CHECK_LABELS, computePriorityFixes, type PriorityFix } from "@/lib/scoring/fixes";
+import { computeIssues, type ReportIssue } from "@/lib/scoring/fixes";
 import { getSupabasePublic, getSupabaseServer } from "@/lib/supabase";
 import type { ScanCheckResult, ScanGrade } from "@/lib/types/database";
 
@@ -19,25 +19,16 @@ export interface ReportCategory {
   status: ScanCheckResult;
 }
 
-export interface ReportCheck {
-  cat: string;
-  name: string;
-  status: ScanCheckResult;
-  evidence: string;
-}
-
 export interface ReportViewData {
   slug: string;
   business: string;
   url: string;
   scannedAt: string;
   score: number;
-  projected: number;
   grade: ScanGrade;
   verdict: string;
   categories: ReportCategory[];
-  fixes: PriorityFix[];
-  checks: ReportCheck[];
+  issues: ReportIssue[];
 }
 
 export interface LoadedReport {
@@ -66,10 +57,7 @@ export async function loadReportBySlug(slug: string): Promise<LoadedReport | nul
   }
 
   const [{ data: checks }, { data: lead }] = await Promise.all([
-    supabase
-      .from("scan_checks")
-      .select("check_id, category, result, evidence, fix_text, effort")
-      .eq("scan_id", scan.id),
+    supabase.from("scan_checks").select("check_id, result, evidence").eq("scan_id", scan.id),
     supabase.from("leads").select("business_name").eq("id", scan.lead_id).maybeSingle(),
   ]);
 
@@ -81,15 +69,7 @@ export async function loadReportBySlug(slug: string): Promise<LoadedReport | nul
     return { key: CATEGORY_LABELS[id] ?? id, score, status: categoryStatus(score) };
   });
 
-  const fixes = computePriorityFixes(checks ?? [], 5);
-  const projected = Math.min(100, scan.score + fixes.reduce((sum, f) => sum + f.impact, 0));
-
-  const checksOut: ReportCheck[] = (checks ?? []).map((c) => ({
-    cat: CATEGORY_LABELS[c.category] ?? c.category,
-    name: CHECK_LABELS.get(c.check_id) ?? c.check_id,
-    status: c.result,
-    evidence: c.evidence ?? "",
-  }));
+  const issues = computeIssues(checks ?? []);
 
   return {
     leadId: scan.lead_id,
@@ -99,12 +79,10 @@ export async function loadReportBySlug(slug: string): Promise<LoadedReport | nul
       url: displayUrl(scan.url),
       scannedAt: format(new Date(scan.completed_at ?? scan.created_at), "d MMMM yyyy"),
       score: scan.score,
-      projected,
       grade: scan.grade,
       verdict: VERDICT_BY_GRADE[scan.grade],
       categories,
-      fixes,
-      checks: checksOut,
+      issues,
     },
   };
 }
