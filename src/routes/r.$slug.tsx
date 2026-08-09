@@ -4,7 +4,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { Calendar, Download, ExternalLink, Globe, Phone } from "lucide-react";
 
 import { Logo } from "@/components/site/Logo";
-import kliviqLogo from "@/assets/kliviq-logo.png.asset.json";
 import { loadReportBySlug, trackReportView, type ReportViewData } from "@/lib/server/report";
 
 type Status = "pass" | "partial" | "fail";
@@ -344,10 +343,9 @@ function ReportPage() {
             href="https://kliviq.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center gap-2"
-            aria-label="KlivIQ"
+            className="mt-6 inline-block text-sm font-semibold tracking-wide text-slate-500 transition hover:text-[#10b981]"
           >
-            <img src={kliviqLogo.url} alt="KlivIQ" className="h-8 w-auto" />
+            by KlivIQ
           </a>
           <Watermark />
         </section>
