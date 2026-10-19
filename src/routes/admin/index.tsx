@@ -133,13 +133,7 @@ function grade(score: number | null) {
 }
 
 type SortKey =
-  | "name"
-  | "business"
-  | "score"
-  | "heatScore"
-  | "status"
-  | "createdAt"
-  | "lastActivityAt";
+  "name" | "business" | "score" | "heatScore" | "status" | "createdAt" | "lastActivityAt";
 type SortDir = "asc" | "desc";
 
 function AdminPage() {
@@ -309,11 +303,19 @@ function AdminPage() {
               Live
             </span>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1 pl-1 pr-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-slate-200">
-              {adminInitials(data.adminEmail)}
+          <div className="flex items-center gap-4">
+            <Link
+              to="/admin/outreach"
+              className="text-sm font-medium text-amber-300 hover:text-amber-200"
+            >
+              Outreach
+            </Link>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1 pl-1 pr-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-slate-200">
+                {adminInitials(data.adminEmail)}
+              </div>
+              <span className="text-sm text-slate-300">{data.adminEmail}</span>
             </div>
-            <span className="text-sm text-slate-300">{data.adminEmail}</span>
           </div>
         </div>
       </header>
