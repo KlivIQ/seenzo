@@ -73,8 +73,8 @@ function seenzoPitch(ctx: DraftContext): { hook: string; ask: string } {
       : `When people ask ChatGPT or Google's AI who is a good ${ctx.industry?.toLowerCase() || "firm"}${where(ctx)}, most local businesses do not show up, often because of small technical gaps on their website.`;
   const ask =
     ctx.seenzoScore != null
-      ? "Happy to send the full report on WhatsApp or email. It is free."
-      : "We built Seenzo (seenzo.in) to check this. The scan is free and takes about a minute, and the report is in plain English.";
+      ? "Happy to send you the full report on WhatsApp or email, no cost."
+      : "We built a tool called Seenzo that checks this. If useful, I can run it for your website and send you the report in plain English, no cost.";
   return { hook, ask };
 }
 
@@ -112,14 +112,22 @@ function pitchFor(product: OutreachProduct, ctx: DraftContext): { hook: string; 
   }
 }
 
+/** Trims listing-style names ("KS Academy - Best #1 CA Coaching in Coimbatore") to the real name. */
+export function shortName(name: string): string {
+  const cut = name.split(/\s[-–|:]\s|,|\(/)[0]?.trim() || name.trim();
+  return cut.length > 32 ? `${cut.slice(0, 32).replace(/\s+\S*$/, "")}` : cut;
+}
+
+// Subjects read like a normal work email: short, lowercase, specific to them, no hype words,
+// no "AI", no question-mark hooks, no scores. These look personal and avoid promo filters.
 const SUBJECTS: Record<OutreachProduct, (ctx: DraftContext) => string> = {
   seenzo: (c) =>
-    c.seenzoScore != null
-      ? `${c.businessName}: AI visibility score ${c.seenzoScore}/100`
-      : `Does AI search recommend ${c.businessName}?`,
-  tryon: (c) => `Virtual try-on for ${c.businessName}`,
-  connect: (c) => `Faster WhatsApp replies for ${c.businessName}`,
-  consulting: (c) => `A quick idea for ${c.businessName}`,
+    c.websiteUrl && host(c.websiteUrl) !== "your website"
+      ? `quick note on ${host(c.websiteUrl)}`
+      : `question about ${shortName(c.businessName)}`,
+  tryon: (c) => `idea for ${shortName(c.businessName)}`,
+  connect: (c) => `whatsapp enquiries at ${shortName(c.businessName)}`,
+  consulting: (c) => `idea for ${shortName(c.businessName)}`,
 };
 
 // ---------- Public API ----------
@@ -158,10 +166,10 @@ export function buildDrafts(
         });
       }
     } else if (step === 2) {
-      const line = `Just following up on my earlier note about ${ctx.businessName}. ${ask}`;
+      const line = `Just following up on my earlier note about ${shortName(ctx.businessName)}. ${ask}`;
       out.push({
         channel,
-        subject: channel === "email" ? `Re: ${subject}` : null,
+        subject: channel === "email" ? subject : null, // send as a reply in the same thread
         body:
           channel === "email" ? `${hi}\n\n${line}\n\n${OPT_OUT}\n\n${SIGN_OFF}` : `${hi} ${line}`,
       });
@@ -169,7 +177,7 @@ export function buildDrafts(
       const line = `I will stop here so I do not clutter your inbox. If ${product === "seenzo" ? "AI visibility" : "this"} becomes a priority later, you can reach me at hello@kliviq.com or on WhatsApp.`;
       out.push({
         channel,
-        subject: channel === "email" ? `Re: ${subject}` : null,
+        subject: channel === "email" ? subject : null, // send as a reply in the same thread
         body: channel === "email" ? `${hi}\n\n${line}\n\n${SIGN_OFF}` : `${hi} ${line}`,
       });
     }
