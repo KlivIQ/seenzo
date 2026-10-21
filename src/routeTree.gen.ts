@@ -17,6 +17,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as AdminOutreachRouteImport } from './routes/admin/outreach'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as ApiScanRequestRouteImport } from './routes/api/scan-request'
 import { Route as ApiTrackRouteImport } from './routes/api/track'
@@ -64,6 +65,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminOutreachRoute = AdminOutreachRouteImport.update({
+  id: '/admin/outreach',
+  path: '/admin/outreach',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiInngestRoute = ApiInngestRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/outreach': typeof AdminOutreachRoute
   '/api/inngest': typeof ApiInngestRoute
   '/api/scan-request': typeof ApiScanRequestRoute
   '/api/track': typeof ApiTrackRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/outreach': typeof AdminOutreachRoute
   '/api/inngest': typeof ApiInngestRoute
   '/api/scan-request': typeof ApiScanRequestRoute
   '/api/track': typeof ApiTrackRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/outreach': typeof AdminOutreachRoute
   '/api/inngest': typeof ApiInngestRoute
   '/api/scan-request': typeof ApiScanRequestRoute
   '/api/track': typeof ApiTrackRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/login'
+    | '/admin/outreach'
     | '/api/inngest'
     | '/api/scan-request'
     | '/api/track'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/login'
+    | '/admin/outreach'
     | '/api/inngest'
     | '/api/scan-request'
     | '/api/track'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/admin/login'
+    | '/admin/outreach'
     | '/api/inngest'
     | '/api/scan-request'
     | '/api/track'
@@ -227,6 +239,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminOutreachRoute: typeof AdminOutreachRoute
   ApiInngestRoute: typeof ApiInngestRoute
   ApiScanRequestRoute: typeof ApiScanRequestRoute
   ApiTrackRoute: typeof ApiTrackRoute
@@ -296,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/outreach': {
+      id: '/admin/outreach'
+      path: '/admin/outreach'
+      fullPath: '/admin/outreach'
+      preLoaderRoute: typeof AdminOutreachRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/inngest': {
       id: '/api/inngest'
       path: '/api/inngest'
@@ -363,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminOutreachRoute: AdminOutreachRoute,
   ApiInngestRoute: ApiInngestRoute,
   ApiScanRequestRoute: ApiScanRequestRoute,
   ApiTrackRoute: ApiTrackRoute,

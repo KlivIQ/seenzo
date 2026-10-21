@@ -1,0 +1,91 @@
+// Types for the internal outreach tool. Kept out of database.ts so the generated/hand-synced
+// Seenzo schema types stay untouched; server code uses a loosely typed client for these tables.
+
+export type OutreachProduct = "seenzo" | "tryon" | "connect" | "consulting";
+export type OutreachChannel = "email" | "linkedin" | "whatsapp";
+export type OutreachStatus =
+  "new" | "drafted" | "sent" | "replied" | "booked" | "won" | "lost" | "do_not_contact";
+export type OutreachMessageStatus = "draft" | "sent" | "skipped";
+
+export const OUTREACH_PRODUCTS: OutreachProduct[] = ["seenzo", "tryon", "connect", "consulting"];
+export const OUTREACH_CHANNELS: OutreachChannel[] = ["email", "linkedin", "whatsapp"];
+export const OUTREACH_STATUSES: OutreachStatus[] = [
+  "new",
+  "drafted",
+  "sent",
+  "replied",
+  "booked",
+  "won",
+  "lost",
+  "do_not_contact",
+];
+
+export interface OutreachProspect {
+  id: string;
+  created_at: string;
+  business_name: string;
+  website_url: string | null;
+  website_host: string | null;
+  city: string | null;
+  industry: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  linkedin_url: string | null;
+  source: string;
+  product: OutreachProduct;
+  seenzo_score: number | null;
+  status: OutreachStatus;
+  notes: string | null;
+  followup_step: number;
+  last_contacted_at: string | null;
+  next_followup_at: string | null;
+}
+
+export interface OutreachMessage {
+  id: string;
+  prospect_id: string;
+  created_at: string;
+  channel: OutreachChannel;
+  step: number;
+  product: string;
+  subject: string | null;
+  body: string;
+  status: OutreachMessageStatus;
+  sent_at: string | null;
+}
+
+export interface ProspectImportRow {
+  business_name: string;
+  website_url?: string;
+  city?: string;
+  industry?: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  linkedin_url?: string;
+  source_type?: string;
+  score?: string;
+}
+
+export interface OutreachMetrics {
+  total: number;
+  toSend: number;
+  sent: number;
+  replied: number;
+  followupsDue: number;
+}
+
+export interface OutreachDashboard {
+  prospects: OutreachProspect[];
+  messages: OutreachMessage[];
+  metrics: OutreachMetrics;
+  adminEmail: string;
+}
+
+export interface ImportResult {
+  added: number;
+  skippedDuplicate: number;
+  skippedOptedOut: number;
+  skippedInvalid: number;
+}
