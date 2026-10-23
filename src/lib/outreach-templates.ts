@@ -1,6 +1,6 @@
 // Draft generation for the internal outreach tool. Pure functions, safe on client and server.
 // Voice rules: Indian English, no em dashes, no hype, no claims we cannot back up.
-// Nothing here sends anything. Every draft is reviewed and sent manually.
+// Nothing here sends anything. Drafts are only sent after Sri confirms them in the admin UI.
 
 import type { OutreachChannel, OutreachProduct } from "@/lib/types/outreach";
 
@@ -10,6 +10,7 @@ export interface DraftContext {
   city?: string | null;
   industry?: string | null;
   websiteUrl?: string | null;
+  contactEmail?: string | null;
   seenzoScore?: number | null;
 }
 
@@ -63,18 +64,46 @@ function host(url?: string | null): string {
   }
 }
 
+const FREE_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "yahoo.com",
+  "yahoo.co.in",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "rediffmail.com",
+  "icloud.com",
+  "protonmail.com",
+  "zoho.com",
+]);
+
+/**
+ * True only when the contact's email domain matches the website host, so we never quote a
+ * website that may belong to someone else (directory listings, parent bodies, scraped junk).
+ */
+export function websiteVerified(email?: string | null, url?: string | null): boolean {
+  const domain = (email ?? "").split("@")[1]?.trim().toLowerCase();
+  if (!domain || FREE_EMAIL_DOMAINS.has(domain)) return false;
+  const site = host(url);
+  if (site === "your website") return false;
+  const h = site.toLowerCase();
+  return h === domain || h.endsWith(`.${domain}`) || domain.endsWith(`.${h}`);
+}
+
 // ---------- Step 1 openers by product ----------
 
 function seenzoPitch(ctx: DraftContext): { hook: string; ask: string } {
-  const site = host(ctx.websiteUrl);
+  const site = websiteVerified(ctx.contactEmail, ctx.websiteUrl)
+    ? host(ctx.websiteUrl)
+    : "your website";
   const hook =
     ctx.seenzoScore != null
       ? `I ran ${site} through Seenzo, a tool we built that checks how visible a business is to AI search like ChatGPT and Google's AI answers. It scored ${ctx.seenzoScore} out of 100, and the report lists exactly what is holding it back.`
       : `When people ask ChatGPT or Google's AI who is a good ${ctx.industry?.toLowerCase() || "firm"}${where(ctx)}, most local businesses do not show up, often because of small technical gaps on their website.`;
   const ask =
     ctx.seenzoScore != null
-      ? "Happy to send the full report on WhatsApp or email. It is free."
-      : "We built Seenzo (seenzo.in) to check this. The scan is free and takes about a minute, and the report is in plain English.";
+      ? "Happy to send you the full report on WhatsApp or email, no cost."
+      : "We built a tool called Seenzo that checks this. If useful, I can run it for your website and send you the report in plain English, no cost.";
   return { hook, ask };
 }
 
@@ -112,14 +141,60 @@ function pitchFor(product: OutreachProduct, ctx: DraftContext): { hook: string; 
   }
 }
 
+/** Trims listing-style names ("KS Academy - Best #1 CA Coaching in Coimbatore") to the real name. */
+export function shortName(name: string): string {
+  const cut = name.split(/\s[-–|:]\s|,|\(/)[0]?.trim() || name.trim();
+  return cut.length > 32 ? `${cut.slice(0, 32).replace(/\s+\S*$/, "")}` : cut;
+}
+
+const KEEP_UPPER = new Set([
+  "CA",
+  "CS",
+  "CMA",
+  "ACCA",
+  "ICAI",
+  "LLP",
+  "GST",
+  "TDS",
+  "MSME",
+  "HR",
+  "IT",
+  "AI",
+  "UAE",
+  "USA",
+  "UK",
+]);
+
+const SMALL_WORDS = new Set(["and", "of", "the", "for", "in", "at", "on"]);
+
+/** Title-cases SHOUTY or all-lowercase names (all-caps subjects look like spam) but keeps initials and acronyms. */
+export function niceName(name: string): string {
+  const short = shortName(name);
+  const letters = short.replace(/[^A-Za-z]/g, "");
+  const upper = letters.replace(/[^A-Z]/g, "").length;
+  const shouty = upper / Math.max(letters.length, 1) >= 0.8;
+  const allLower = upper === 0;
+  if (letters.length < 4 || (!shouty && !allLower)) return short;
+  return short
+    .split(/(\s+)/)
+    .map((w, i) => {
+      const bare = w.replace(/[^A-Za-z]/g, "");
+      if (!bare) return w;
+      if (i > 0 && SMALL_WORDS.has(bare.toLowerCase())) return w.toLowerCase();
+      if (KEEP_UPPER.has(bare.toUpperCase()) || (shouty && !/[AEIOU]/i.test(bare)))
+        return w.toUpperCase();
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    })
+    .join("");
+}
+
+// Subjects read like a normal work email: short, lowercase, the business name only (never a
+// website we have not verified), no hype words, no "AI", no question-mark hooks, no scores.
 const SUBJECTS: Record<OutreachProduct, (ctx: DraftContext) => string> = {
-  seenzo: (c) =>
-    c.seenzoScore != null
-      ? `${c.businessName}: AI visibility score ${c.seenzoScore}/100`
-      : `Does AI search recommend ${c.businessName}?`,
-  tryon: (c) => `Virtual try-on for ${c.businessName}`,
-  connect: (c) => `Faster WhatsApp replies for ${c.businessName}`,
-  consulting: (c) => `A quick idea for ${c.businessName}`,
+  seenzo: (c) => `quick question for ${niceName(c.businessName)}`,
+  tryon: (c) => `idea for ${niceName(c.businessName)}`,
+  connect: (c) => `whatsapp enquiries at ${niceName(c.businessName)}`,
+  consulting: (c) => `idea for ${niceName(c.businessName)}`,
 };
 
 // ---------- Public API ----------
@@ -158,10 +233,10 @@ export function buildDrafts(
         });
       }
     } else if (step === 2) {
-      const line = `Just following up on my earlier note about ${ctx.businessName}. ${ask}`;
+      const line = `Just following up on my earlier note about ${niceName(ctx.businessName)}. ${ask}`;
       out.push({
         channel,
-        subject: channel === "email" ? `Re: ${subject}` : null,
+        subject: channel === "email" ? subject : null, // send as a reply in the same thread
         body:
           channel === "email" ? `${hi}\n\n${line}\n\n${OPT_OUT}\n\n${SIGN_OFF}` : `${hi} ${line}`,
       });
@@ -169,7 +244,7 @@ export function buildDrafts(
       const line = `I will stop here so I do not clutter your inbox. If ${product === "seenzo" ? "AI visibility" : "this"} becomes a priority later, you can reach me at hello@kliviq.com or on WhatsApp.`;
       out.push({
         channel,
-        subject: channel === "email" ? `Re: ${subject}` : null,
+        subject: channel === "email" ? subject : null, // send as a reply in the same thread
         body: channel === "email" ? `${hi}\n\n${line}\n\n${SIGN_OFF}` : `${hi} ${line}`,
       });
     }

@@ -5,7 +5,7 @@ export type OutreachProduct = "seenzo" | "tryon" | "connect" | "consulting";
 export type OutreachChannel = "email" | "linkedin" | "whatsapp";
 export type OutreachStatus =
   "new" | "drafted" | "sent" | "replied" | "booked" | "won" | "lost" | "do_not_contact";
-export type OutreachMessageStatus = "draft" | "sent" | "skipped";
+export type OutreachMessageStatus = "draft" | "sending" | "sent" | "skipped";
 
 export const OUTREACH_PRODUCTS: OutreachProduct[] = ["seenzo", "tryon", "connect", "consulting"];
 export const OUTREACH_CHANNELS: OutreachChannel[] = ["email", "linkedin", "whatsapp"];
@@ -53,6 +53,11 @@ export interface OutreachMessage {
   body: string;
   status: OutreachMessageStatus;
   sent_at: string | null;
+  sent_via: "manual" | "hostinger" | null;
+  sent_uid: number | null;
+  sent_folder: string | null;
+  sending_started_at: string | null;
+  error: string | null;
 }
 
 export interface ProspectImportRow {
@@ -81,6 +86,14 @@ export interface OutreachDashboard {
   messages: OutreachMessage[];
   metrics: OutreachMetrics;
   adminEmail: string;
+  sending: OutreachSendingInfo;
+}
+
+export interface OutreachSendingInfo {
+  enabled: boolean;
+  from: string | null;
+  dailyCap: number;
+  sentToday: number;
 }
 
 export interface ImportResult {
