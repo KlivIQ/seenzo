@@ -15,6 +15,14 @@ import type {
 import { OUTREACH_PRODUCTS, OUTREACH_STATUSES } from "@/lib/types/outreach";
 
 import { getAdminSession } from "./auth";
+import {
+  findSentMessage,
+  hostingerConfigured,
+  HostingerMailError,
+  outreachFromAddress,
+  sendMail,
+  type MessageRef,
+} from "./hostinger-mail";
 
 // outreach_* tables are not part of the generated Database types, so use a loosely typed client.
 // All rows are cast to the interfaces in @/lib/types/outreach at the boundary.
@@ -25,6 +33,40 @@ function db(): SupabaseClient {
 const FOLLOWUP_DAYS: Record<number, number> = { 1: 4, 2: 6 }; // after step 1 -> +4d, after step 2 -> +6d (about day 10)
 const MAX_ROWS_PER_IMPORT = 500;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEFAULT_DAILY_CAP = 15;
+const STALE_SENDING_MS = 2 * 60 * 1000; // a 'sending' lock older than this is treated as abandoned
+
+function dailyCap(): number {
+  const n = Number.parseInt(process.env.OUTREACH_DAILY_CAP ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_DAILY_CAP;
+}
+
+/** Midnight today in India (IST, UTC+5:30), as a UTC Date. The daily cap resets at this time. */
+function startOfTodayIST(): Date {
+  const offset = 330 * 60 * 1000;
+  const ist = new Date(Date.now() + offset);
+  ist.setUTCHours(0, 0, 0, 0);
+  return new Date(ist.getTime() - offset);
+}
+
+async function countSentToday(): Promise<number> {
+  const supabase = db();
+  const since = startOfTodayIST().toISOString();
+  const [sent, sending] = await Promise.all([
+    supabase
+      .from("outreach_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "sent")
+      .eq("sent_via", "hostinger")
+      .gte("sent_at", since),
+    supabase
+      .from("outreach_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "sending"),
+  ]);
+  if (sent.error) throw new Error(`Failed to count sends: ${sent.error.message}`);
+  return (sent.count ?? 0) + (sending.count ?? 0);
+}
 
 async function requireAdmin(): Promise<{ email: string }> {
   const session = await getAdminSession();
@@ -72,11 +114,18 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
   const prospects = (prospectsRes.data ?? []) as OutreachProspect[];
   const messages = (messagesRes.data ?? []) as OutreachMessage[];
   const now = Date.now();
+  const enabled = hostingerConfigured();
 
   return {
     prospects,
     messages,
     adminEmail: email,
+    sending: {
+      enabled,
+      from: outreachFromAddress(),
+      dailyCap: dailyCap(),
+      sentToday: enabled ? await countSentToday() : 0,
+    },
     metrics: {
       total: prospects.length,
       toSend: prospects.filter((p) => p.status === "new" || p.status === "drafted").length,
@@ -108,6 +157,7 @@ async function writeDrafts(
       city: prospect.city,
       industry: prospect.industry,
       websiteUrl: prospect.website_url,
+      contactEmail: prospect.contact_email,
       seenzoScore: prospect.seenzo_score,
     },
     step,
@@ -325,27 +375,18 @@ export async function updateMessageBody(
   if (error) throw new Error(`Failed to save draft: ${error.message}`);
 }
 
-/** Call after the person has actually sent the message by hand (email client, LinkedIn or WhatsApp). */
-export async function markMessageSent(messageId: string): Promise<void> {
-  await requireAdmin();
+/** Shared bookkeeping once a message has gone out: message row, follow-up schedule, prospect status. */
+async function applySent(
+  msg: OutreachMessage,
+  prospect: OutreachProspect,
+  now: Date,
+  extra: Record<string, unknown>,
+): Promise<void> {
   const supabase = db();
-  const { data, error } = await supabase
-    .from("outreach_messages")
-    .select("*")
-    .eq("id", messageId)
-    .single();
-  if (error || !data) throw new Error(`Message not found: ${error?.message ?? messageId}`);
-  const msg = data as OutreachMessage;
-  if (msg.status === "sent") return;
-
-  const prospect = await getProspect(msg.prospect_id);
-  if (prospect.status === "do_not_contact") throw new Error("Prospect is marked do not contact");
-
-  const now = new Date();
   const { error: msgError } = await supabase
     .from("outreach_messages")
-    .update({ status: "sent", sent_at: now.toISOString() })
-    .eq("id", messageId);
+    .update({ status: "sent", sent_at: now.toISOString(), error: null, ...extra })
+    .eq("id", msg.id);
   if (msgError) throw new Error(`Failed to mark sent: ${msgError.message}`);
 
   const days = FOLLOWUP_DAYS[msg.step];
@@ -360,6 +401,194 @@ export async function markMessageSent(messageId: string): Promise<void> {
     })
     .eq("id", prospect.id);
   if (pError) throw new Error(`Failed to update prospect: ${pError.message}`);
+}
+
+async function getMessage(id: string): Promise<OutreachMessage> {
+  const { data, error } = await db().from("outreach_messages").select("*").eq("id", id).single();
+  if (error || !data) throw new Error(`Message not found: ${error?.message ?? id}`);
+  return data as OutreachMessage;
+}
+
+/** Call after the person has actually sent the message by hand (email client, LinkedIn or WhatsApp). */
+export async function markMessageSent(messageId: string): Promise<void> {
+  await requireAdmin();
+  const msg = await getMessage(messageId);
+  if (msg.status === "sent") return;
+  if (msg.status === "sending") throw new Error("This message is being sent right now");
+
+  const prospect = await getProspect(msg.prospect_id);
+  if (prospect.status === "do_not_contact") throw new Error("Prospect is marked do not contact");
+  await applySent(msg, prospect, new Date(), { sent_via: "manual" });
+}
+
+// ---------- Direct send (Hostinger) ----------
+
+export interface SendResult {
+  sentToday: number;
+  dailyCap: number;
+  threaded: boolean;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Looks up the Sent copy a few times (the API queues the send and returns no ID). Never throws. */
+async function lookupSentUid(
+  to: string,
+  subject: string,
+  since: Date,
+  attempts = 3,
+): Promise<MessageRef | null> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const ref = await findSentMessage({ to, subject, since });
+      if (ref) return ref;
+    } catch {
+      // ignore; threading falls back to a fresh email
+    }
+    if (i < attempts - 1) await sleep(1500);
+  }
+  return null;
+}
+
+/** Thread target for a follow-up: the most recent earlier email to this prospect that we can reference. */
+async function findThreadParent(msg: OutreachMessage, to: string): Promise<MessageRef | null> {
+  const { data } = await db()
+    .from("outreach_messages")
+    .select("*")
+    .eq("prospect_id", msg.prospect_id)
+    .eq("channel", "email")
+    .eq("status", "sent")
+    .lt("step", msg.step)
+    .order("step", { ascending: false })
+    .limit(1);
+  const parent = ((data ?? []) as OutreachMessage[])[0];
+  if (!parent) return null;
+  if (parent.sent_uid && parent.sent_folder) {
+    return { uid: parent.sent_uid, folder: parent.sent_folder };
+  }
+  if (parent.sent_via !== "hostinger" || !parent.sent_at || !parent.subject) return null;
+  // UID lookup failed at send time; try once more now and remember it.
+  const ref = await lookupSentUid(to, parent.subject, new Date(parent.sent_at), 1);
+  if (ref) {
+    await db()
+      .from("outreach_messages")
+      .update({ sent_uid: ref.uid, sent_folder: ref.folder })
+      .eq("id", parent.id);
+  }
+  return ref;
+}
+
+/**
+ * Sends one email draft from the outreach mailbox after Sri confirms it in the UI.
+ * Guards: email channel only, do-not-contact/opted-out, daily cap, single-send lock.
+ */
+export async function sendOutreachEmail(
+  messageId: string,
+  edits: { subject: string; body: string },
+): Promise<SendResult> {
+  await requireAdmin();
+  if (!hostingerConfigured()) {
+    throw new Error("Sending is not set up. Add HOSTINGER_MAIL_API_TOKEN and OUTREACH_FROM.");
+  }
+  const subject = edits.subject.trim();
+  const body = edits.body.trim();
+  if (!subject || !body) throw new Error("Subject and body are required");
+
+  const supabase = db();
+  const msg = await getMessage(messageId);
+  if (msg.channel !== "email") throw new Error("Only email drafts can be sent from here");
+  if (msg.status === "sent") throw new Error("This email was already sent");
+
+  const prospect = await getProspect(msg.prospect_id);
+  if (prospect.status === "do_not_contact") throw new Error("Prospect is marked do not contact");
+  const to = prospect.contact_email?.trim().toLowerCase();
+  if (!to || !EMAIL_RE.test(to)) throw new Error("This prospect has no valid email address");
+
+  const { data: optedOut } = await supabase
+    .from("leads")
+    .select("id")
+    .eq("status", "opted_out")
+    .ilike("email", to)
+    .limit(1);
+  if (optedOut && optedOut.length > 0) throw new Error("This email has opted out of Seenzo");
+
+  // Release an abandoned lock (e.g. the function timed out mid-send).
+  if (msg.status === "sending") {
+    const started = msg.sending_started_at ? new Date(msg.sending_started_at).getTime() : 0;
+    if (Date.now() - started < STALE_SENDING_MS) {
+      throw new Error("This email is being sent right now");
+    }
+    await supabase
+      .from("outreach_messages")
+      .update({ status: "draft" })
+      .eq("id", msg.id)
+      .eq("status", "sending");
+  }
+
+  const cap = dailyCap();
+  const sentToday = await countSentToday();
+  if (sentToday >= cap) {
+    throw new Error(`Daily limit reached (${cap} emails). Sending resets at midnight IST.`);
+  }
+
+  // Lock: only one request can move this draft to 'sending'.
+  const { data: locked, error: lockError } = await supabase
+    .from("outreach_messages")
+    .update({
+      status: "sending",
+      sending_started_at: new Date().toISOString(),
+      subject,
+      body,
+      error: null,
+    })
+    .eq("id", msg.id)
+    .eq("status", "draft")
+    .select("id");
+  if (lockError) throw new Error(`Failed to lock draft: ${lockError.message}`);
+  if (!locked || locked.length === 0) throw new Error("This email is already being sent");
+
+  const parent = msg.step > 1 ? await findThreadParent(msg, to) : null;
+  const finalSubject = parent && !/^re:/i.test(subject) ? `Re: ${subject}` : subject;
+  const startedAt = new Date();
+
+  try {
+    await sendMail({ to, subject: finalSubject, text: body, inReplyTo: parent });
+  } catch (err) {
+    const message =
+      err instanceof HostingerMailError || err instanceof Error ? err.message : "Send failed";
+    await supabase
+      .from("outreach_messages")
+      .update({ status: "draft", error: message })
+      .eq("id", msg.id);
+    throw new Error(message);
+  }
+
+  try {
+    await applySent({ ...msg, subject: finalSubject }, prospect, startedAt, {
+      sent_via: "hostinger",
+      subject: finalSubject,
+    });
+  } catch (err) {
+    // The email is out. Make sure the row can never be released back to 'draft' and re-sent.
+    await supabase
+      .from("outreach_messages")
+      .update({ status: "sent", sent_at: startedAt.toISOString(), sent_via: "hostinger" })
+      .eq("id", msg.id);
+    throw new Error(
+      `Email was sent, but updating the tracker failed: ${err instanceof Error ? err.message : "unknown error"}. Refresh before doing anything else.`,
+    );
+  }
+
+  // Best effort: remember the Sent copy so follow-ups can thread under it.
+  const ref = await lookupSentUid(to, finalSubject, startedAt);
+  if (ref) {
+    await supabase
+      .from("outreach_messages")
+      .update({ sent_uid: ref.uid, sent_folder: ref.folder })
+      .eq("id", msg.id);
+  }
+
+  return { sentToday: sentToday + 1, dailyCap: cap, threaded: Boolean(parent) };
 }
 
 export async function deleteProspect(prospectId: string): Promise<void> {
