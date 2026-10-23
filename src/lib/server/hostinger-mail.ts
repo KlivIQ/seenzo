@@ -167,3 +167,37 @@ export async function findSentMessage(input: {
   );
   return hit ? { uid: hit.uid, folder } : null;
 }
+
+export interface InboxMessage {
+  uid: number;
+  date: string;
+  subject: string | null;
+  from: { name: string; address: string } | null;
+}
+
+/** Recent Inbox messages (newest first) received on or after `since`. */
+export async function listRecentInbox(since: Date, perPage = 50): Promise<InboxMessage[]> {
+  const mailbox = await getMailboxId();
+  const res = await call<{ data: InboxMessage[] }>(
+    `/api/v1/mailboxes/${encodeURIComponent(mailbox)}/folders/INBOX/messages/search?perPage=${perPage}&sort=-uid`,
+    { method: "POST", body: JSON.stringify({ since: since.toISOString().slice(0, 10) }) },
+  );
+  return res?.data ?? [];
+}
+
+/** Plain text of a message (falls back to HTML stripped of tags). */
+export async function getMessageText(uid: number, folder = "INBOX"): Promise<string> {
+  const mailbox = await getMailboxId();
+  const res = await call<{ data: { text: string; html: string } }>(
+    `/api/v1/mailboxes/${encodeURIComponent(mailbox)}/folders/${encodeURIComponent(folder)}/messages/${uid}/text`,
+  );
+  const text = res?.data.text?.trim();
+  if (text) return text;
+  return (res?.data.html ?? "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<br\s*\/?>|<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .trim();
+}
