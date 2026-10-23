@@ -23,6 +23,12 @@ export interface Draft {
 const SIGN_OFF = "Sriram\nKlivIQ, Chennai\nkliviq.com";
 const OPT_OUT = "If this is not relevant, just tell me and I will not write again.";
 
+// Seenzo only: what happens after the report. Honest wording, no guarantee of AI rankings.
+const SEENZO_FIX =
+  "If you want help fixing what it finds, we at KlivIQ (kliviq.com) can sort it out for you, so your business is easier for ChatGPT, Google and other AI search tools to find and recommend. Just reply to this email.";
+const SEENZO_FIX_SHORT =
+  "And if it finds issues, we at KlivIQ (kliviq.com) can fix them so AI search can find and recommend you more easily.";
+
 const TRYON_RE = /saree|sari|ethnic|textile|boutique|fashion|apparel|silk|handloom|garment/i;
 const CONNECT_RE =
   /clinic|salon|spa|dental|dentist|hospital|gym|fitness|restaurant|cafe|coaching|academy|school/i;
@@ -214,10 +220,11 @@ export function buildDrafts(
   for (const channel of channels) {
     if (step === 1) {
       if (channel === "email") {
+        const fix = product === "seenzo" ? `${SEENZO_FIX}\n\n` : "";
         out.push({
           channel,
           subject,
-          body: `${hi}\n\n${hook}\n\n${ask}\n\n${OPT_OUT}\n\n${SIGN_OFF}`,
+          body: `${hi}\n\n${hook}\n\n${ask}\n\n${fix}${OPT_OUT}\n\n${SIGN_OFF}`,
         });
       } else if (channel === "linkedin") {
         out.push({
@@ -233,7 +240,12 @@ export function buildDrafts(
         });
       }
     } else if (step === 2) {
-      const line = `Just following up on my earlier note about ${niceName(ctx.businessName)}. ${ask}`;
+      const fix = product === "seenzo" ? ` ${SEENZO_FIX_SHORT}` : "";
+      const nudge =
+        product === "seenzo"
+          ? `Just following up on my earlier note about how AI search sees ${niceName(ctx.businessName)}. I can still run the Seenzo check on your website and send you the report, no cost.`
+          : `Just following up on my earlier note about ${niceName(ctx.businessName)}. ${ask}`;
+      const line = `${nudge}${channel === "email" ? fix : ""}`;
       out.push({
         channel,
         subject: channel === "email" ? subject : null, // send as a reply in the same thread
