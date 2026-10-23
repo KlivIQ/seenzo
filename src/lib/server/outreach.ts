@@ -218,6 +218,49 @@ export async function regenerateDrafts(
   }
 }
 
+/**
+ * Rewrites every unsent draft with the current templates (after copy changes).
+ * Sent messages are never touched. Do-not-contact prospects are skipped.
+ */
+export async function regenerateAllDrafts(): Promise<{ prospects: number }> {
+  await requireAdmin();
+  const supabase = db();
+  const [prospectsRes, draftsRes] = await Promise.all([
+    supabase.from("outreach_prospects").select("*").neq("status", "do_not_contact"),
+    supabase.from("outreach_messages").select("prospect_id, step").eq("status", "draft"),
+  ]);
+  if (prospectsRes.error)
+    throw new Error(`Failed to load prospects: ${prospectsRes.error.message}`);
+  if (draftsRes.error) throw new Error(`Failed to load drafts: ${draftsRes.error.message}`);
+
+  const stepsByProspect = new Map<string, Set<number>>();
+  for (const d of (draftsRes.data ?? []) as { prospect_id: string; step: number }[]) {
+    const set = stepsByProspect.get(d.prospect_id) ?? new Set<number>();
+    set.add(d.step);
+    stepsByProspect.set(d.prospect_id, set);
+  }
+
+  const jobs: { prospect: OutreachProspect; step: 1 | 2 | 3 }[] = [];
+  for (const p of (prospectsRes.data ?? []) as OutreachProspect[]) {
+    const steps = stepsByProspect.get(p.id);
+    if (steps) {
+      for (const st of steps) jobs.push({ prospect: p, step: st as 1 | 2 | 3 });
+    }
+  }
+
+  // A few at a time so a big list stays well inside the request time limit.
+  const touched = new Set<string>();
+  for (let i = 0; i < jobs.length; i += 5) {
+    await Promise.all(
+      jobs.slice(i, i + 5).map(async (j) => {
+        await writeDrafts(j.prospect, j.step);
+        touched.add(j.prospect.id);
+      }),
+    );
+  }
+  return { prospects: touched.size };
+}
+
 // ---------- Import ----------
 
 export async function importProspects(rows: ProspectImportRow[]): Promise<ImportResult> {
