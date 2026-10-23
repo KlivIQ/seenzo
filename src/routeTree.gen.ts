@@ -25,6 +25,7 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as RSlugRouteImport } from './routes/r.$slug'
 import { Route as ApiAdminLeadsRouteImport } from './routes/api/admin/leads'
+import { Route as ApiOutreachInboundRouteImport } from './routes/api/outreach/inbound'
 import { Route as ApiScanStatusSlugRouteImport } from './routes/api/scan-status.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -107,6 +108,11 @@ const ApiAdminLeadsRoute = ApiAdminLeadsRouteImport.update({
   path: '/api/admin/leads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOutreachInboundRoute = ApiOutreachInboundRouteImport.update({
+  id: '/api/outreach/inbound',
+  path: '/api/outreach/inbound',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiScanStatusSlugRoute = ApiScanStatusSlugRouteImport.update({
   id: '/api/scan-status/$slug',
   path: '/api/scan-status/$slug',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/api/admin/leads': typeof ApiAdminLeadsRoute
+  '/api/outreach/inbound': typeof ApiOutreachInboundRoute
   '/api/scan-status/$slug': typeof ApiScanStatusSlugRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/blog': typeof BlogIndexRoute
   '/api/admin/leads': typeof ApiAdminLeadsRoute
+  '/api/outreach/inbound': typeof ApiOutreachInboundRoute
   '/api/scan-status/$slug': typeof ApiScanStatusSlugRoute
 }
 export interface FileRoutesById {
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/blog/': typeof BlogIndexRoute
   '/api/admin/leads': typeof ApiAdminLeadsRoute
+  '/api/outreach/inbound': typeof ApiOutreachInboundRoute
   '/api/scan-status/$slug': typeof ApiScanStatusSlugRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/blog/'
     | '/api/admin/leads'
+    | '/api/outreach/inbound'
     | '/api/scan-status/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/blog'
     | '/api/admin/leads'
+    | '/api/outreach/inbound'
     | '/api/scan-status/$slug'
   id:
     | '__root__'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/blog/'
     | '/api/admin/leads'
+    | '/api/outreach/inbound'
     | '/api/scan-status/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiAdminLeadsRoute: typeof ApiAdminLeadsRoute
+  ApiOutreachInboundRoute: typeof ApiOutreachInboundRoute
   ApiScanStatusSlugRoute: typeof ApiScanStatusSlugRoute
 }
 
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminLeadsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/outreach/inbound': {
+      id: '/api/outreach/inbound'
+      path: '/api/outreach/inbound'
+      fullPath: '/api/outreach/inbound'
+      preLoaderRoute: typeof ApiOutreachInboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/scan-status/$slug': {
       id: '/api/scan-status/$slug'
       path: '/api/scan-status/$slug'
@@ -392,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiAdminLeadsRoute: ApiAdminLeadsRoute,
+  ApiOutreachInboundRoute: ApiOutreachInboundRoute,
   ApiScanStatusSlugRoute: ApiScanStatusSlugRoute,
 }
 export const routeTree = rootRouteImport

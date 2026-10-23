@@ -15,10 +15,14 @@ import type {
 import { OUTREACH_PRODUCTS, OUTREACH_STATUSES } from "@/lib/types/outreach";
 
 import { getAdminSession } from "./auth";
+import { classifyInbound, emailsIn, snippetOf, type InboundKind } from "@/lib/outreach-replies";
+
 import {
   findSentMessage,
+  getMessageText,
   hostingerConfigured,
   HostingerMailError,
+  listRecentInbox,
   outreachFromAddress,
   sendMail,
   type MessageRef,
@@ -632,6 +636,151 @@ export async function sendOutreachEmail(
   }
 
   return { sentToday: sentToday + 1, dailyCap: cap, threaded: Boolean(parent) };
+}
+
+// ---------- Reply detection ----------
+
+export interface ReplyScanResult {
+  checked: number;
+  replies: number;
+  optOuts: number;
+  bounces: number;
+  autoReplies: number;
+}
+
+const REPLY_NOTE: Record<InboundKind, string> = {
+  reply: "Replied",
+  opt_out: "Asked not to be contacted",
+  bounce: "Email bounced (address not valid)",
+  auto_reply: "Auto-reply (out of office)",
+};
+
+/**
+ * Reads recent Inbox mail and records anything from a known prospect: a reply stops follow-ups,
+ * an opt-out or bounce marks them do-not-contact, an auto-reply is logged only. Idempotent per
+ * mailbox UID, so webhook retries and manual checks never double-process. Mail from anyone who
+ * is not a prospect is ignored and never stored.
+ */
+export async function scanInboxForReplies(days = 3): Promise<ReplyScanResult> {
+  if (!hostingerConfigured()) throw new Error("Sending is not set up, so replies cannot be read");
+  const supabase = db();
+  const result: ReplyScanResult = {
+    checked: 0,
+    replies: 0,
+    optOuts: 0,
+    bounces: 0,
+    autoReplies: 0,
+  };
+
+  const since = new Date(Date.now() - days * 86400000);
+  const messages = await listRecentInbox(since);
+  result.checked = messages.length;
+  if (messages.length === 0) return result;
+
+  const { data: seenRows } = await supabase
+    .from("outreach_inbound")
+    .select("uid")
+    .in(
+      "uid",
+      messages.map((m) => m.uid),
+    );
+  const seen = new Set(((seenRows ?? []) as { uid: number }[]).map((r) => r.uid));
+
+  const { data: prospectRows, error } = await supabase
+    .from("outreach_prospects")
+    .select("*")
+    .not("contact_email", "is", null);
+  if (error) throw new Error(`Failed to load prospects: ${error.message}`);
+  const byEmail = new Map<string, OutreachProspect>();
+  for (const p of (prospectRows ?? []) as OutreachProspect[]) {
+    if (p.contact_email) byEmail.set(p.contact_email.toLowerCase(), p);
+  }
+
+  // Oldest first, so the latest reply ends up as the prospect's last_reply_*.
+  for (const m of [...messages].reverse()) {
+    if (seen.has(m.uid) || !m.from?.address) continue;
+    const fromEmail = m.from.address.toLowerCase();
+    const direct = byEmail.get(fromEmail);
+    const looksLikeBounce =
+      classifyInbound({
+        fromEmail,
+        fromName: m.from.name,
+        subject: m.subject,
+      }) === "bounce";
+    if (!direct && !looksLikeBounce) continue; // not a prospect: ignore entirely
+
+    let text = "";
+    try {
+      text = await getMessageText(m.uid);
+    } catch {
+      // classify on subject alone
+    }
+    const kind = classifyInbound({ fromEmail, fromName: m.from.name, subject: m.subject, text });
+
+    let prospect = direct;
+    if (kind === "bounce") {
+      prospect = emailsIn(text)
+        .map((e) => byEmail.get(e))
+        .find((p): p is OutreachProspect => !!p && p.last_contacted_at != null);
+    }
+    if (!prospect) continue;
+
+    const receivedAt = m.date || new Date().toISOString();
+    const snippet = kind === "bounce" ? REPLY_NOTE.bounce : snippetOf(text) || m.subject || "";
+    const { error: insError } = await supabase.from("outreach_inbound").upsert(
+      {
+        uid: m.uid,
+        prospect_id: prospect.id,
+        received_at: receivedAt,
+        from_email: fromEmail,
+        subject: m.subject,
+        snippet,
+        kind,
+      },
+      { onConflict: "uid", ignoreDuplicates: true },
+    );
+    if (insError) throw new Error(`Failed to record reply: ${insError.message}`);
+
+    const update: Record<string, unknown> = {
+      last_reply_at: receivedAt,
+      last_reply_snippet: snippet,
+      last_reply_kind: kind,
+    };
+    const dateLabel = new Date(receivedAt).toLocaleDateString("en-IN");
+    if (kind === "reply") {
+      result.replies += 1;
+      update.next_followup_at = null;
+      if (!["booked", "won", "lost", "do_not_contact"].includes(prospect.status)) {
+        update.status = "replied";
+      }
+    } else if (kind === "opt_out" || kind === "bounce") {
+      if (kind === "opt_out") result.optOuts += 1;
+      else result.bounces += 1;
+      update.status = "do_not_contact";
+      update.next_followup_at = null;
+    } else {
+      result.autoReplies += 1; // follow-ups continue
+    }
+    if (kind !== "auto_reply") {
+      update.notes = [prospect.notes, `${dateLabel}: ${REPLY_NOTE[kind]} (auto-detected)`]
+        .filter(Boolean)
+        .join("\n");
+    }
+    const { error: upError } = await supabase
+      .from("outreach_prospects")
+      .update(update)
+      .eq("id", prospect.id);
+    if (upError) throw new Error(`Failed to update prospect: ${upError.message}`);
+    prospect.notes = (update.notes as string | undefined) ?? prospect.notes;
+    if (typeof update.status === "string") prospect.status = update.status as OutreachStatus;
+  }
+  return result;
+}
+
+/** Admin-triggered version of the scan (the "Check replies" button). */
+export async function checkRepliesNow(): Promise<ReplyScanResult> {
+  await requireAdmin();
+  return scanInboxForReplies(7);
 }
 
 export async function deleteProspect(prospectId: string): Promise<void> {

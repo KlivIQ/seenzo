@@ -5,6 +5,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Inbox,
   Loader2,
   RefreshCw,
   Search,
@@ -22,6 +23,7 @@ import {
   importProspects,
   loadOutreach,
   markMessageSent,
+  checkRepliesNow,
   regenerateAllDrafts,
   regenerateDrafts,
   sendOutreachEmail,
@@ -62,6 +64,8 @@ const patchFn = createServerFn({ method: "POST" })
   });
 
 const regenAllFn = createServerFn({ method: "POST" }).handler(async () => regenerateAllDrafts());
+
+const checkRepliesFn = createServerFn({ method: "POST" }).handler(async () => checkRepliesNow());
 
 const regenFn = createServerFn({ method: "POST" })
   .validator((input: { id: string; product?: OutreachProduct; step?: 1 | 2 | 3 }) => input)
@@ -238,7 +242,8 @@ interface SendTarget {
 
 /** The email draft that is ready to go out for this prospect, if any. */
 function nextEmailDraft(p: OutreachProspect, messages: OutreachMessage[]): OutreachMessage | null {
-  if (p.status === "do_not_contact" || !p.contact_email) return null;
+  if (["do_not_contact", "replied", "booked", "won", "lost"].includes(p.status)) return null;
+  if (!p.contact_email) return null;
   const drafts = messages.filter(
     (m) => m.prospect_id === p.id && m.channel === "email" && m.status === "draft",
   );
@@ -381,6 +386,7 @@ function OutreachPage() {
   const [showImport, setShowImport] = useState(false);
   const [sendTarget, setSendTarget] = useState<SendTarget | null>(null);
   const [regenAll, setRegenAll] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const refresh = () => router.invalidate();
 
@@ -438,6 +444,37 @@ function OutreachPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {data.sending.enabled && (
+              <button
+                onClick={async () => {
+                  setChecking(true);
+                  try {
+                    const r = await checkRepliesFn();
+                    const parts = [
+                      r.replies && `${r.replies} replied`,
+                      r.optOuts && `${r.optOuts} opted out`,
+                      r.bounces && `${r.bounces} bounced`,
+                      r.autoReplies && `${r.autoReplies} auto-replies`,
+                    ].filter(Boolean);
+                    toast.success(parts.length ? `New: ${parts.join(", ")}` : "No new replies");
+                    refresh();
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Could not check replies");
+                  } finally {
+                    setChecking(false);
+                  }
+                }}
+                disabled={checking}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-50"
+              >
+                {checking ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Inbox className="h-4 w-4" />
+                )}
+                Check replies
+              </button>
+            )}
             <button
               onClick={async () => {
                 if (
@@ -563,6 +600,11 @@ function OutreachPage() {
                       {STATUS_LABEL[p.status]}
                     </span>
                     {isDue(p) && <span className="ml-2 text-xs text-amber-300">follow-up due</span>}
+                    {p.last_reply_at && p.last_reply_kind !== "auto_reply" && (
+                      <div className="mt-1 max-w-xs truncate text-xs text-slate-400">
+                        {relTime(p.last_reply_at)}: {p.last_reply_snippet}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-400">
                     {relTime(p.last_contacted_at)}
@@ -838,6 +880,35 @@ function ProspectDrawer({
             </select>
           </label>
         </div>
+
+        {prospect.last_reply_at && (
+          <div
+            className={`mb-4 rounded-lg border p-3 text-sm ${
+              prospect.last_reply_kind === "reply"
+                ? "border-amber-500/30 bg-amber-500/10 text-amber-100"
+                : prospect.last_reply_kind === "auto_reply"
+                  ? "border-white/10 bg-white/[0.03] text-slate-300"
+                  : "border-rose-500/30 bg-rose-500/10 text-rose-200"
+            }`}
+          >
+            <div className="mb-1 text-xs uppercase tracking-wider opacity-70">
+              {prospect.last_reply_kind === "reply"
+                ? "They replied"
+                : prospect.last_reply_kind === "opt_out"
+                  ? "Asked not to be contacted"
+                  : prospect.last_reply_kind === "bounce"
+                    ? "Email bounced"
+                    : "Auto-reply (follow-ups continue)"}{" "}
+              · {relTime(prospect.last_reply_at)}
+            </div>
+            {prospect.last_reply_snippet}
+            {prospect.last_reply_kind === "reply" && (
+              <div className="mt-1 text-xs opacity-70">
+                Follow-ups stopped. Reply from your Hostinger inbox.
+              </div>
+            )}
+          </div>
+        )}
 
         <ContactFields
           prospect={prospect}

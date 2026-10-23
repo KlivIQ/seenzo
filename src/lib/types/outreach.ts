@@ -40,6 +40,9 @@ export interface OutreachProspect {
   followup_step: number;
   last_contacted_at: string | null;
   next_followup_at: string | null;
+  last_reply_at: string | null;
+  last_reply_snippet: string | null;
+  last_reply_kind: "reply" | "opt_out" | "bounce" | "auto_reply" | null;
 }
 
 export interface OutreachMessage {
