@@ -22,6 +22,7 @@ import {
   importProspects,
   loadOutreach,
   markMessageSent,
+  regenerateAllDrafts,
   regenerateDrafts,
   sendOutreachEmail,
   updateMessageBody,
@@ -59,6 +60,8 @@ const patchFn = createServerFn({ method: "POST" })
     await updateProspect(data.id, data.patch);
     return { success: true } as const;
   });
+
+const regenAllFn = createServerFn({ method: "POST" }).handler(async () => regenerateAllDrafts());
 
 const regenFn = createServerFn({ method: "POST" })
   .validator((input: { id: string; product?: OutreachProduct; step?: 1 | 2 | 3 }) => input)
@@ -377,6 +380,7 @@ function OutreachPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [sendTarget, setSendTarget] = useState<SendTarget | null>(null);
+  const [regenAll, setRegenAll] = useState(false);
 
   const refresh = () => router.invalidate();
 
@@ -433,12 +437,43 @@ function OutreachPage() {
                 : "Manual send (direct sending not set up)"}
             </span>
           </div>
-          <button
-            onClick={() => setShowImport(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400"
-          >
-            <Upload className="h-4 w-4" /> Import prospects
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                if (
+                  !confirm(
+                    "Rewrite all unsent drafts with the latest email wording? Sent emails are not changed. Any edits you made to unsent drafts will be replaced.",
+                  )
+                )
+                  return;
+                setRegenAll(true);
+                try {
+                  const res = await regenAllFn();
+                  toast.success(`Drafts updated for ${res.prospects} prospects`);
+                  refresh();
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Could not update drafts");
+                } finally {
+                  setRegenAll(false);
+                }
+              }}
+              disabled={regenAll}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-50"
+            >
+              {regenAll ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Regenerate all drafts
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400"
+            >
+              <Upload className="h-4 w-4" /> Import prospects
+            </button>
+          </div>
         </div>
       </header>
 
