@@ -26,7 +26,7 @@ export function ownText(text: string): string {
     if (/^from:\s.+@/i.test(l)) break; // Outlook header block
     if (/^sent from my /i.test(l)) break;
     if (/^(hi|hello),?$/i.test(l) && out.length === 0) continue;
-    if (/^sriram$|^klivIQ, chennai$|^kliviq\.com$/i.test(l)) break; // our signature quoted inline
+    if (/^sriram$|^kliviq(,| technologies,) chennai$|^(www\.)?kliviq\.com$/i.test(l)) break; // our signature quoted inline
     out.push(line);
   }
   return out.join("\n").trim();

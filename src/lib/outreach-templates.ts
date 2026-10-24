@@ -23,6 +23,8 @@ export interface Draft {
 }
 
 const SIGN_OFF = "Sriram\nKlivIQ, Chennai\nkliviq.com";
+// TryOn emails use the full company name and the www address.
+const TRYON_SIGN_OFF = "Sriram\nKlivIQ Technologies, Chennai\nwww.kliviq.com";
 
 const TRYON_RE = /saree|sari|ethnic|textile|boutique|fashion|apparel|silk|handloom|garment/i;
 const CONNECT_RE =
@@ -178,8 +180,8 @@ function englishCopy(product: OutreachProduct, ctx: DraftContext): Copy {
           };
   } else if (product === "tryon") {
     pitch = {
-      hook: "We have made a tool called KlivIQ TryOn for saree and dress shops. Your customer uploads a photo. Then she can see the saree on herself before she buys. A saree shop in Chennai is already trying it.",
-      ask: "If you sell online or on WhatsApp, I can show you a 2 minute demo with one of your own sarees.",
+      hook: "We have made an AI tool called KlivIQ TryOn for online saree stores. Your customer uploads a photo. Then she can see the saree on herself before she buys. A saree shop in Chennai is already trying it.",
+      ask: "I can show you a 10 minute demo with one of your own sarees, and we can talk about using it on your website. It is very easy to add to a website and can be installed in a few days.",
     };
   } else if (product === "connect") {
     pitch = {
@@ -236,8 +238,8 @@ function tamilCopy(product: OutreachProduct, ctx: DraftContext): Copy | null {
           };
   } else if (product === "tryon") {
     pitch = {
-      hook: "புடவை மற்றும் ஆடைக் கடைகளுக்காக KlivIQ TryOn என்ற கருவியை உருவாக்கியுள்ளோம். வாடிக்கையாளர் தன் புகைப்படத்தைப் பதிவேற்றினால், வாங்குவதற்கு முன்பே அந்தப் புடவை தனக்கு எப்படி இருக்கும் என்று பார்க்கலாம். சென்னையில் ஒரு புடவைக் கடை ஏற்கனவே இதைப் பயன்படுத்திப் பார்க்கிறது.",
-      ask: "நீங்கள் ஆன்லைனிலோ WhatsApp மூலமாகவோ விற்பனை செய்தால், உங்கள் புடவை ஒன்றை வைத்தே 2 நிமிட டெமோ காட்டுகிறேன்.",
+      hook: "ஆன்லைன் புடவைக் கடைகளுக்காக KlivIQ TryOn என்ற AI கருவியை உருவாக்கியுள்ளோம். உங்கள் வாடிக்கையாளர் தன் புகைப்படத்தைப் பதிவேற்றினால், வாங்குவதற்கு முன்பே அந்தப் புடவை தனக்கு எப்படி இருக்கும் என்று பார்க்கலாம். சென்னையில் ஒரு புடவைக் கடை ஏற்கனவே இதைப் பயன்படுத்திப் பார்க்கிறது.",
+      ask: "உங்கள் புடவை ஒன்றை வைத்தே 10 நிமிட டெமோ காட்டுகிறேன். அதன் பிறகு, இதை உங்கள் இணையதளத்தில் பயன்படுத்துவது பற்றிப் பேசலாம். இதை இணையதளத்தில் சேர்ப்பது மிகவும் எளிது. சில நாட்களில் நிறுவிவிடலாம்.",
     };
   } else if (product === "connect") {
     pitch = {
@@ -411,7 +413,7 @@ export function buildDrafts(
       out.push({
         channel,
         subject, // follow-ups go as replies in the same thread
-        body: `${emailBlock(en, step)}${tamil}\n\n${SIGN_OFF}`,
+        body: `${emailBlock(en, step)}${tamil}\n\n${product === "tryon" ? TRYON_SIGN_OFF : SIGN_OFF}`,
       });
       continue;
     }
