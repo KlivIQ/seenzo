@@ -2,13 +2,13 @@
 // Seenzo schema types stay untouched; server code uses a loosely typed client for these tables.
 
 export type OutreachProduct = "seenzo" | "tryon" | "connect" | "consulting";
-export type OutreachChannel = "email" | "linkedin" | "whatsapp";
+export type OutreachChannel = "email" | "linkedin" | "whatsapp" | "instagram";
 export type OutreachStatus =
   "new" | "drafted" | "sent" | "replied" | "booked" | "won" | "lost" | "do_not_contact";
 export type OutreachMessageStatus = "draft" | "sending" | "sent" | "skipped";
 
 export const OUTREACH_PRODUCTS: OutreachProduct[] = ["seenzo", "tryon", "connect", "consulting"];
-export const OUTREACH_CHANNELS: OutreachChannel[] = ["email", "linkedin", "whatsapp"];
+export const OUTREACH_CHANNELS: OutreachChannel[] = ["email", "linkedin", "whatsapp", "instagram"];
 export const OUTREACH_STATUSES: OutreachStatus[] = [
   "new",
   "drafted",
@@ -32,6 +32,7 @@ export interface OutreachProspect {
   contact_email: string | null;
   contact_phone: string | null;
   linkedin_url: string | null;
+  instagram_handle: string | null;
   source: string;
   product: OutreachProduct;
   seenzo_score: number | null;
@@ -72,6 +73,7 @@ export interface ProspectImportRow {
   contact_email?: string;
   contact_phone?: string;
   linkedin_url?: string;
+  instagram_handle?: string;
   source_type?: string;
   score?: string;
 }
@@ -84,7 +86,18 @@ export interface OutreachMetrics {
   followupsDue: number;
 }
 
+/** Inbound mail from prospects that the tool is tracking (from the outreach_inbound table). */
+export interface OutreachInboundSummary {
+  total: number;
+  replies: number;
+  optOuts: number;
+  bounces: number;
+  autoReplies: number;
+  lastReceivedAt: string | null;
+}
+
 export interface OutreachDashboard {
+  inbound: OutreachInboundSummary;
   prospects: OutreachProspect[];
   messages: OutreachMessage[];
   metrics: OutreachMetrics;

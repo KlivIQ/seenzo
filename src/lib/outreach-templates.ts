@@ -335,6 +335,64 @@ function emailBlock(c: Copy, step: 1 | 2 | 3): string {
   return [c.hi, c.stop].join("\n\n");
 }
 
+export type DmChannel = "instagram" | "whatsapp" | "linkedin";
+
+/** Splits an English + Tamil message so each language can be sent on its own. */
+export const TAMIL_MARKER = "தமிழில்:";
+
+function tamilDmBlock(ta: Copy, step: 1 | 2 | 3): string {
+  if (step === 1) {
+    return [
+      ta.hi,
+      "சென்னையில் உள்ள KlivIQ-இல் இருந்து ஸ்ரீராம் எழுதுகிறேன்.",
+      ta.pitch.hook,
+      ta.pitch.ask,
+      ta.optOut,
+    ].join("\n\n");
+  }
+  if (step === 2) {
+    return `${ta.hi} என் முந்தைய செய்தி பற்றி ஒரு சிறிய நினைவூட்டல். ${ta.pitch.ask}`;
+  }
+  return `${ta.hi} உங்களைத் தொந்தரவு செய்ய வேண்டாம் என்பதால் இத்துடன் நிறுத்திக்கொள்கிறேன். பின்னர் உதவி தேவைப்பட்டால், இங்கேயே எனக்குச் செய்தி அனுப்புங்கள்.`;
+}
+
+/**
+ * Direct-message copy for Instagram, WhatsApp and LinkedIn. Short, plain English (plus Tamil for
+ * Tamil Nadu cities on Instagram and WhatsApp). Never mentions email: follow-ups happen in the chat.
+ */
+export function buildDmBody(
+  channel: DmChannel,
+  product: OutreachProduct,
+  ctx: DraftContext,
+  step: 1 | 2 | 3 = 1,
+): string {
+  const en = englishCopy(product, ctx);
+  const ta = channel === "linkedin" ? null : tamilCopy(product, ctx);
+
+  let english: string;
+  if (step === 1) {
+    if (channel === "linkedin") {
+      english = `${en.hi} ${en.pitch.hook} ${en.pitch.ask}`.slice(0, 700);
+    } else {
+      const intro =
+        channel === "instagram"
+          ? `this is Sriram from KlivIQ, Chennai. I found ${niceName(ctx.businessName)} on Instagram.`
+          : "this is Sriram from KlivIQ, Chennai.";
+      const stop =
+        channel === "whatsapp"
+          ? "If you are not interested, reply STOP. I will not message again."
+          : "If you are not interested, just tell me. I will not message again.";
+      english = `${en.hi} ${intro}\n\n${en.pitch.hook}\n\n${en.pitch.ask}\n\n${stop}`;
+    }
+  } else if (step === 2) {
+    english = `${en.hi} just a gentle reminder about my message. ${en.pitch.ask}`;
+  } else {
+    english = `${en.hi} I will stop messaging now so I do not disturb you. If you need help with this later, you can message me here anytime.`;
+  }
+
+  return ta ? `${english}\n\n${TAMIL_MARKER}\n\n${tamilDmBlock(ta, step)}` : english;
+}
+
 /** step 1 = first touch, 2 = short reminder (about day 4), 3 = last note (about day 10). */
 export function buildDrafts(
   product: OutreachProduct,
@@ -349,7 +407,7 @@ export function buildDrafts(
 
   for (const channel of channels) {
     if (channel === "email") {
-      const tamil = ta ? `\n\nதமிழில்:\n\n${emailBlock(ta, step)}` : "";
+      const tamil = ta ? `\n\n${TAMIL_MARKER}\n\n${emailBlock(ta, step)}` : "";
       out.push({
         channel,
         subject, // follow-ups go as replies in the same thread
@@ -357,20 +415,7 @@ export function buildDrafts(
       });
       continue;
     }
-
-    // LinkedIn and WhatsApp stay short and English only.
-    let body: string;
-    if (step === 1) {
-      body =
-        channel === "linkedin"
-          ? `${en.hi} ${en.pitch.hook} ${en.pitch.ask}`.slice(0, 700)
-          : `${en.hi} this is Sriram from KlivIQ, Chennai. ${en.pitch.hook}\n\n${en.pitch.ask}\n\nIf you are not interested, reply STOP. I will not message again.`;
-    } else if (step === 2) {
-      body = `${en.hi} ${en.remind}`;
-    } else {
-      body = `${en.hi} ${en.stop}`;
-    }
-    out.push({ channel, subject: null, body });
+    out.push({ channel, subject: null, body: buildDmBody(channel, product, ctx, step) });
   }
   return out;
 }
@@ -380,6 +425,10 @@ export function whatsappLink(phone: string | null | undefined, text: string): st
   if (digits.length < 10) return null;
   const to = digits.length === 10 ? `91${digits}` : digits;
   return `https://wa.me/${to}?text=${encodeURIComponent(text)}`;
+}
+
+export function instagramLink(handle: string | null | undefined): string | null {
+  return handle ? `https://www.instagram.com/${handle}/` : null;
 }
 
 export function mailtoLink(

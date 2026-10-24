@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildDrafts, pickProduct } from "@/lib/outreach-templates";
+import { channelRoute, normalizeInstagram } from "@/lib/outreach-dm";
 import { getSupabaseServer } from "@/lib/supabase";
 import type {
   ImportResult,
   OutreachChannel,
+  OutreachInboundSummary,
   OutreachDashboard,
   OutreachMessage,
   OutreachProduct,
@@ -99,7 +101,7 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
   const { email } = await requireAdmin();
   const supabase = db();
 
-  const [prospectsRes, messagesRes] = await Promise.all([
+  const [prospectsRes, messagesRes, inboundRes] = await Promise.all([
     supabase
       .from("outreach_prospects")
       .select("*")
@@ -110,10 +112,28 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
       .select("*")
       .order("created_at", { ascending: true })
       .limit(5000),
+    supabase
+      .from("outreach_inbound")
+      .select("kind, received_at")
+      .order("received_at", { ascending: false })
+      .limit(5000),
   ]);
   if (prospectsRes.error)
     throw new Error(`Failed to load prospects: ${prospectsRes.error.message}`);
   if (messagesRes.error) throw new Error(`Failed to load messages: ${messagesRes.error.message}`);
+  // Counts are best-effort: a problem here should never stop the page from loading.
+  const inboundRows = (inboundRes.error ? [] : (inboundRes.data ?? [])) as {
+    kind: "reply" | "opt_out" | "bounce" | "auto_reply";
+    received_at: string;
+  }[];
+  const inbound: OutreachInboundSummary = {
+    total: inboundRows.length,
+    replies: inboundRows.filter((r) => r.kind === "reply").length,
+    optOuts: inboundRows.filter((r) => r.kind === "opt_out").length,
+    bounces: inboundRows.filter((r) => r.kind === "bounce").length,
+    autoReplies: inboundRows.filter((r) => r.kind === "auto_reply").length,
+    lastReceivedAt: inboundRows[0]?.received_at ?? null,
+  };
 
   const prospects = (prospectsRes.data ?? []) as OutreachProspect[];
   const messages = (messagesRes.data ?? []) as OutreachMessage[];
@@ -121,6 +141,7 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
   const enabled = hostingerConfigured();
 
   return {
+    inbound,
     prospects,
     messages,
     adminEmail: email,
@@ -153,6 +174,13 @@ async function writeDrafts(
   channels?: OutreachChannel[],
 ): Promise<void> {
   const supabase = db();
+  // Instagram drafts only exist for prospects that have a handle.
+  const wanted: OutreachChannel[] = channels ?? [
+    "email",
+    "linkedin",
+    "whatsapp",
+    ...(prospect.instagram_handle ? (["instagram"] as const) : []),
+  ];
   const drafts = buildDrafts(
     prospect.product,
     {
@@ -165,16 +193,17 @@ async function writeDrafts(
       seenzoScore: prospect.seenzo_score,
     },
     step,
-    channels,
+    wanted,
   );
 
-  // Replace any unsent drafts for this step so regenerating never duplicates.
+  // Replace any unsent drafts for this step (on these channels) so regenerating never duplicates.
   const { error: delError } = await supabase
     .from("outreach_messages")
     .delete()
     .eq("prospect_id", prospect.id)
     .eq("step", step)
-    .eq("status", "draft");
+    .eq("status", "draft")
+    .in("channel", wanted);
   if (delError) throw new Error(`Failed to clear old drafts: ${delError.message}`);
 
   const rows = drafts.map((d) => ({
@@ -282,19 +311,22 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
 
   // Existing keys, for dedupe.
   const [existing, optedOut] = await Promise.all([
-    supabase.from("outreach_prospects").select("contact_email, website_host"),
+    supabase.from("outreach_prospects").select("contact_email, website_host, instagram_handle"),
     supabase.from("leads").select("email").eq("status", "opted_out"),
   ]);
   if (existing.error) throw new Error(`Failed to check duplicates: ${existing.error.message}`);
 
   const seenEmails = new Set<string>();
   const seenHosts = new Set<string>();
+  const seenHandles = new Set<string>();
   for (const r of (existing.data ?? []) as {
     contact_email: string | null;
     website_host: string | null;
+    instagram_handle: string | null;
   }[]) {
     if (r.contact_email) seenEmails.add(r.contact_email.toLowerCase());
     if (r.website_host) seenHosts.add(r.website_host);
+    if (r.instagram_handle) seenHandles.add(r.instagram_handle.toLowerCase());
   }
   const optedOutEmails = new Set(
     ((optedOut.data ?? []) as { email: string }[]).map((l) => l.email.toLowerCase()),
@@ -307,8 +339,13 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
     const host = hostOf(row.website_url);
     const phone = clean(row.contact_phone);
     const linkedin = clean(row.linkedin_url);
+    const instagram = normalizeInstagram(row.instagram_handle);
 
-    if (!business || (!email && !phone && !linkedin) || (email && !EMAIL_RE.test(email))) {
+    if (
+      !business ||
+      (!email && !phone && !linkedin && !instagram) ||
+      (email && !EMAIL_RE.test(email))
+    ) {
       result.skippedInvalid += 1;
       continue;
     }
@@ -316,12 +353,17 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
       result.skippedOptedOut += 1;
       continue;
     }
-    if ((email && seenEmails.has(email)) || (host && seenHosts.has(host))) {
+    if (
+      (email && seenEmails.has(email)) ||
+      (host && seenHosts.has(host)) ||
+      (instagram && seenHandles.has(instagram))
+    ) {
       result.skippedDuplicate += 1;
       continue;
     }
     if (email) seenEmails.add(email);
     if (host) seenHosts.add(host);
+    if (instagram) seenHandles.add(instagram);
 
     const score = Number.parseInt(row.score ?? "", 10);
     toInsert.push({
@@ -334,6 +376,7 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
       contact_email: email,
       contact_phone: phone,
       linkedin_url: linkedin,
+      instagram_handle: instagram,
       source: clean(row.source_type) ?? "csv_import",
       product: pickProduct(row.industry, business),
       seenzo_score: Number.isFinite(score) && score >= 0 && score <= 100 ? score : null,
@@ -374,6 +417,7 @@ export interface ProspectPatch {
   contact_email?: string;
   contact_phone?: string;
   linkedin_url?: string;
+  instagram_handle?: string;
   seenzo_score?: number | null;
 }
 
@@ -390,6 +434,13 @@ export async function updateProspect(prospectId: string, patch: ProspectPatch): 
   if (patch.contact_name !== undefined) update.contact_name = clean(patch.contact_name);
   if (patch.contact_phone !== undefined) update.contact_phone = clean(patch.contact_phone);
   if (patch.linkedin_url !== undefined) update.linkedin_url = clean(patch.linkedin_url);
+  let newHandle: string | null = null;
+  if (patch.instagram_handle !== undefined) {
+    const raw = clean(patch.instagram_handle);
+    newHandle = normalizeInstagram(raw);
+    if (raw && !newHandle) throw new Error("That does not look like an Instagram handle");
+    update.instagram_handle = newHandle;
+  }
   if (patch.contact_email !== undefined) {
     const email = clean(patch.contact_email)?.toLowerCase() ?? null;
     if (email && !EMAIL_RE.test(email)) throw new Error("Invalid email");
@@ -403,7 +454,25 @@ export async function updateProspect(prospectId: string, patch: ProspectPatch): 
   if (Object.keys(update).length === 0) return;
 
   const { error } = await db().from("outreach_prospects").update(update).eq("id", prospectId);
-  if (error) throw new Error(`Failed to update prospect: ${error.message}`);
+  if (error) {
+    if (error.code === "23505") throw new Error("Another prospect already uses that value");
+    throw new Error(`Failed to update prospect: ${error.message}`);
+  }
+
+  // A handle added later gets its first Instagram draft right away.
+  if (newHandle) {
+    const prospect = await getProspect(prospectId);
+    const { count } = await db()
+      .from("outreach_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("prospect_id", prospectId)
+      .eq("channel", "instagram");
+    if (!count && prospect.status !== "do_not_contact") {
+      await writeDrafts(prospect, (Math.min(prospect.followup_step + 1, 3) as 1 | 2 | 3) || 1, [
+        "instagram",
+      ]);
+    }
+  }
 }
 
 export async function updateMessageBody(
@@ -466,6 +535,77 @@ export async function markMessageSent(messageId: string): Promise<void> {
   const prospect = await getProspect(msg.prospect_id);
   if (prospect.status === "do_not_contact") throw new Error("Prospect is marked do not contact");
   await applySent(msg, prospect, new Date(), { sent_via: "manual" });
+}
+
+/**
+ * Records a DM (Instagram, WhatsApp or LinkedIn) that Sri has just sent by hand. Nothing is sent
+ * from here. Follow-up timing for DMs is worked out from these rows, so the email follow-up
+ * schedule on the prospect is left alone.
+ */
+export async function recordDmSent(input: {
+  prospectId: string;
+  channel: OutreachChannel;
+  step: number;
+  body: string;
+}): Promise<void> {
+  await requireAdmin();
+  if (input.channel === "email") throw new Error("Emails are sent from the email list");
+  if (![1, 2, 3].includes(input.step)) throw new Error("Invalid step");
+  const body = input.body.trim();
+  if (!body) throw new Error("The message is empty");
+
+  const supabase = db();
+  const prospect = await getProspect(input.prospectId);
+  if (["do_not_contact", "replied", "booked", "won", "lost"].includes(prospect.status)) {
+    throw new Error("This prospect is closed or has replied");
+  }
+  if (!channelRoute(prospect, input.channel)) {
+    throw new Error("This prospect has no contact for that channel");
+  }
+
+  const { data: existing, error: findError } = await supabase
+    .from("outreach_messages")
+    .select("*")
+    .eq("prospect_id", prospect.id)
+    .eq("channel", input.channel)
+    .eq("step", input.step);
+  if (findError) throw new Error(`Failed to check messages: ${findError.message}`);
+  const rows = (existing ?? []) as OutreachMessage[];
+  if (rows.some((m) => m.status === "sent")) throw new Error("Already marked as sent");
+
+  const now = new Date().toISOString();
+  const draft = rows.find((m) => m.status === "draft");
+  if (draft) {
+    const { error } = await supabase
+      .from("outreach_messages")
+      .update({ body, status: "sent", sent_at: now, sent_via: "manual", error: null })
+      .eq("id", draft.id);
+    if (error) throw new Error(`Failed to save: ${error.message}`);
+  } else {
+    const { error } = await supabase.from("outreach_messages").insert({
+      prospect_id: prospect.id,
+      channel: input.channel,
+      step: input.step,
+      product: prospect.product,
+      subject: null,
+      body,
+      status: "sent",
+      sent_at: now,
+      sent_via: "manual",
+    });
+    if (error) throw new Error(`Failed to save: ${error.message}`);
+  }
+
+  // DM-only prospects move to "sent". Ones with an unsent email stay in the email list.
+  const patch: Record<string, unknown> = { last_contacted_at: now };
+  if (!prospect.contact_email && (prospect.status === "new" || prospect.status === "drafted")) {
+    patch.status = "sent";
+  }
+  const { error: pError } = await supabase
+    .from("outreach_prospects")
+    .update(patch)
+    .eq("id", prospect.id);
+  if (pError) throw new Error(`Failed to update prospect: ${pError.message}`);
 }
 
 // ---------- Direct send (Hostinger) ----------
