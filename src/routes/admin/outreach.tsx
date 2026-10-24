@@ -6,6 +6,7 @@ import {
   Copy,
   ExternalLink,
   Inbox,
+  Instagram,
   Loader2,
   RefreshCw,
   Search,
@@ -16,13 +17,23 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { mailtoLink, websiteVerified, whatsappLink } from "@/lib/outreach-templates";
+import {
+  buildDmBody,
+  instagramLink,
+  mailtoLink,
+  TAMIL_MARKER,
+  websiteVerified,
+  whatsappLink,
+  type DmChannel,
+} from "@/lib/outreach-templates";
+import { buildDmQueue, DM_DAILY_LIMIT, sentToday, type QueueItem } from "@/lib/outreach-dm";
 import { getAdminSession } from "@/lib/server/auth";
 import {
   deleteProspect,
   importProspects,
   loadOutreach,
   markMessageSent,
+  recordDmSent,
   checkRepliesNow,
   regenerateAllDrafts,
   regenerateDrafts,
@@ -88,6 +99,15 @@ const sentFn = createServerFn({ method: "POST" })
     return { success: true } as const;
   });
 
+const recordDmFn = createServerFn({ method: "POST" })
+  .validator(
+    (input: { prospectId: string; channel: OutreachChannel; step: number; body: string }) => input,
+  )
+  .handler(async ({ data }) => {
+    await recordDmSent(data);
+    return { success: true } as const;
+  });
+
 const sendFn = createServerFn({ method: "POST" })
   .validator((input: { id: string; subject: string; body: string }) => input)
   .handler(async ({ data }) =>
@@ -148,6 +168,7 @@ const CHANNEL_LABEL: Record<OutreachChannel, string> = {
   email: "Email",
   linkedin: "LinkedIn",
   whatsapp: "WhatsApp",
+  instagram: "Instagram",
 };
 
 function relTime(iso: string | null): string {
@@ -216,6 +237,10 @@ function parseCsv(text: string): ProspectImportRow[] {
     phone: "contact_phone",
     linkedin_url: "linkedin_url",
     linkedin: "linkedin_url",
+    instagram_handle: "instagram_handle",
+    instagram: "instagram_handle",
+    instagram_url: "instagram_handle",
+    ig: "instagram_handle",
     source_type: "source_type",
     source: "source_type",
     score: "score",
@@ -374,7 +399,7 @@ function ConfirmSendDialog({
 
 // ---------- page ----------
 
-type Filter = "all" | "to_send" | "due" | "sent" | "replied" | "closed";
+type Filter = "all" | "to_send" | "dm" | "due" | "sent" | "replied" | "closed";
 
 function OutreachPage() {
   const data = Route.useLoaderData();
@@ -396,7 +421,7 @@ function OutreachPage() {
       if (product !== "all" && p.product !== product) return false;
       if (q) {
         const hay =
-          `${p.business_name} ${p.city ?? ""} ${p.industry ?? ""} ${p.contact_email ?? ""}`.toLowerCase();
+          `${p.business_name} ${p.city ?? ""} ${p.industry ?? ""} ${p.contact_email ?? ""} ${p.instagram_handle ?? ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       switch (filter) {
@@ -419,8 +444,24 @@ function OutreachPage() {
   const selected = data.prospects.find((p) => p.id === selectedId) ?? null;
   const m = data.metrics;
 
+  const dmQueueAll = useMemo(
+    () => buildDmQueue(data.prospects, data.messages),
+    [data.prospects, data.messages],
+  );
+  const dmQueue = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return dmQueueAll.filter(({ prospect: p }) => {
+      if (product !== "all" && p.product !== product) return false;
+      if (!q) return true;
+      return `${p.business_name} ${p.city ?? ""} ${p.instagram_handle ?? ""}`
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [dmQueueAll, product, query]);
+
   const tabs: { key: Filter; label: string; count?: number }[] = [
     { key: "to_send", label: "To send", count: m.toSend },
+    { key: "dm", label: "DM queue", count: dmQueueAll.length },
     { key: "due", label: "Follow-up due", count: m.followupsDue },
     { key: "sent", label: "Sent", count: m.sent },
     { key: "replied", label: "Replied", count: m.replied },
@@ -555,83 +596,99 @@ function OutreachPage() {
           </div>
         </section>
 
-        <div className="overflow-hidden rounded-xl border border-white/10">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-white/[0.03] text-xs uppercase tracking-wider text-slate-400">
-              <tr>
-                <th className="px-4 py-3">Business</th>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Contact</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Last touch</th>
-                <th className="px-4 py-3 text-right"> </th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.length === 0 && (
+        {filter === "dm" ? (
+          <DmQueue
+            items={dmQueue}
+            messages={data.messages}
+            onOpen={(id) => setSelectedId(id)}
+            onChanged={refresh}
+          />
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-white/10">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-white/[0.03] text-xs uppercase tracking-wider text-slate-400">
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
-                    Nothing here. Import prospects or change the filter.
-                  </td>
+                  <th className="px-4 py-3">Business</th>
+                  <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Last touch</th>
+                  <th className="px-4 py-3 text-right"> </th>
                 </tr>
-              )}
-              {visible.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => setSelectedId(p.id)}
-                  className="cursor-pointer border-t border-white/5 hover:bg-white/[0.04]"
-                >
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{p.business_name}</div>
-                    <div className="text-xs text-slate-400">
-                      {[p.industry, p.city].filter(Boolean).join(" · ")}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">{PRODUCT_LABEL[p.product]}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">
-                    {[p.contact_email, p.contact_phone, p.linkedin_url ? "LinkedIn" : null]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[p.status]}`}
-                    >
-                      {STATUS_LABEL[p.status]}
-                    </span>
-                    {isDue(p) && <span className="ml-2 text-xs text-amber-300">follow-up due</span>}
-                    {p.last_reply_at && p.last_reply_kind !== "auto_reply" && (
-                      <div className="mt-1 max-w-xs truncate text-xs text-slate-400">
-                        {relTime(p.last_reply_at)}: {p.last_reply_snippet}
+              </thead>
+              <tbody>
+                {visible.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                      Nothing here. Import prospects or change the filter.
+                    </td>
+                  </tr>
+                )}
+                {visible.map((p) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => setSelectedId(p.id)}
+                    className="cursor-pointer border-t border-white/5 hover:bg-white/[0.04]"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{p.business_name}</div>
+                      <div className="text-xs text-slate-400">
+                        {[p.industry, p.city].filter(Boolean).join(" · ")}
                       </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-400">
-                    {relTime(p.last_contacted_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {(() => {
-                      const draft = nextEmailDraft(p, data.messages);
-                      if (!draft || !data.sending.enabled) return null;
-                      return (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSendTarget({ prospect: p, message: draft });
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-500/20"
-                        >
-                          <Send className="h-3.5 w-3.5" />
-                          {draft.step === 1 ? "Send" : `Send follow-up ${draft.step - 1}`}
-                        </button>
-                      );
-                    })()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-300">{PRODUCT_LABEL[p.product]}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">
+                      {[
+                        p.contact_email,
+                        p.contact_phone,
+                        p.instagram_handle ? `@${p.instagram_handle}` : null,
+                        p.linkedin_url ? "LinkedIn" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_STYLE[p.status]}`}
+                      >
+                        {STATUS_LABEL[p.status]}
+                      </span>
+                      {isDue(p) && (
+                        <span className="ml-2 text-xs text-amber-300">follow-up due</span>
+                      )}
+                      {p.last_reply_at && p.last_reply_kind !== "auto_reply" && (
+                        <div className="mt-1 max-w-xs truncate text-xs text-slate-400">
+                          {relTime(p.last_reply_at)}: {p.last_reply_snippet}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-400">
+                      {relTime(p.last_contacted_at)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {(() => {
+                        const draft = nextEmailDraft(p, data.messages);
+                        if (!draft || !data.sending.enabled) return null;
+                        return (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSendTarget({ prospect: p, message: draft });
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-500/20"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            {draft.step === 1 ? "Send" : `Send follow-up ${draft.step - 1}`}
+                          </button>
+                        );
+                      })()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
 
       {selected && (
@@ -657,6 +714,309 @@ function OutreachPage() {
         />
       )}
       {showImport && <ImportDialog onClose={() => setShowImport(false)} onDone={refresh} />}
+    </div>
+  );
+}
+
+// ---------- DM queue ----------
+
+const STEP_LABEL = ["", "First message", "Follow-up 1", "Last note"];
+
+const DM_OPEN_LABEL: Record<DmChannel, string> = {
+  whatsapp: "Open WhatsApp",
+  instagram: "Open Instagram",
+  linkedin: "Open LinkedIn",
+};
+
+function dmLink(item: QueueItem, body: string): string | null {
+  const p = item.prospect;
+  if (item.channel === "whatsapp") return whatsappLink(p.contact_phone, body);
+  if (item.channel === "instagram") return instagramLink(p.instagram_handle);
+  return p.linkedin_url?.startsWith("http")
+    ? p.linkedin_url
+    : p.linkedin_url
+      ? `https://${p.linkedin_url}`
+      : null;
+}
+
+function DmQueue({
+  items,
+  messages,
+  onOpen,
+  onChanged,
+}: {
+  items: QueueItem[];
+  messages: OutreachMessage[];
+  onOpen: (id: string) => void;
+  onChanged: () => void;
+}) {
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
+  const today = useMemo(() => sentToday(messages), [messages]);
+  const shown = items.filter((i) => !skipped.has(`${i.prospect.id}:${i.channel}:${i.step}`));
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+        {(["whatsapp", "instagram", "linkedin"] as DmChannel[]).map((c) => (
+          <span
+            key={c}
+            className={`rounded-full border px-2.5 py-1 ${
+              today[c] >= DM_DAILY_LIMIT[c]
+                ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                : "border-white/10 text-slate-300"
+            }`}
+          >
+            {CHANNEL_LABEL[c]} {today[c]}/{DM_DAILY_LIMIT[c]} today
+          </span>
+        ))}
+        <span className="text-slate-500">
+          You send these by hand: open the chat, paste, send, then tap Mark sent. Stay under the
+          daily numbers so the accounts are not limited.
+        </span>
+      </div>
+
+      {shown.length === 0 && (
+        <div className="rounded-xl border border-white/10 px-4 py-10 text-center text-slate-400">
+          Nobody to message right now. Import prospects with a phone, Instagram handle or LinkedIn
+          link, or come back when a follow-up is due.
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {shown.slice(0, 25).map((item) => (
+          <DmCard
+            key={`${item.prospect.id}:${item.channel}:${item.step}`}
+            item={item}
+            overLimit={today[item.channel] >= DM_DAILY_LIMIT[item.channel]}
+            onOpen={() => onOpen(item.prospect.id)}
+            onSkip={() =>
+              setSkipped((prev) =>
+                new Set(prev).add(`${item.prospect.id}:${item.channel}:${item.step}`),
+              )
+            }
+            onChanged={onChanged}
+          />
+        ))}
+        {shown.length > 25 && (
+          <p className="text-center text-xs text-slate-500">
+            Showing the first 25 of {shown.length}. The rest appear as you clear these.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DmCard({
+  item,
+  overLimit,
+  onOpen,
+  onSkip,
+  onChanged,
+}: {
+  item: QueueItem;
+  overLimit: boolean;
+  onOpen: () => void;
+  onSkip: () => void;
+  onChanged: () => void;
+}) {
+  const p = item.prospect;
+  const generated = useMemo(
+    () =>
+      item.draft?.body ??
+      buildDmBody(
+        item.channel,
+        p.product,
+        {
+          businessName: p.business_name,
+          contactName: p.contact_name,
+          city: p.city,
+          industry: p.industry,
+          websiteUrl: p.website_url,
+          contactEmail: p.contact_email,
+          seenzoScore: p.seenzo_score,
+        },
+        item.step,
+      ),
+    [item, p],
+  );
+  const [body, setBody] = useState(generated);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const parts = body.split(`\n\n${TAMIL_MARKER}\n\n`);
+  const hasTamil = parts.length === 2;
+  const link = dmLink(item, body);
+  const tooLong = item.channel === "instagram" && body.length > 1000;
+
+  function copy(text: string, key: string) {
+    void navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  }
+
+  async function act(fn: () => Promise<unknown>, ok: string) {
+    setBusy(true);
+    try {
+      await fn();
+      toast.success(ok);
+      onChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const handle = p.instagram_handle ? `@${p.instagram_handle}` : null;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <button onClick={onOpen} className="text-left font-medium hover:text-amber-200">
+            {p.business_name}
+          </button>
+          <div className="text-xs text-slate-400">
+            {[
+              p.contact_name,
+              p.city,
+              item.channel === "instagram" ? handle : null,
+              item.channel === "whatsapp" ? p.contact_phone : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="rounded-full border border-white/10 px-2 py-0.5 text-slate-300">
+            {CHANNEL_LABEL[item.channel]}
+          </span>
+          <span
+            className={`rounded-full border px-2 py-0.5 ${
+              item.step > 1
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                : "border-white/10 text-slate-300"
+            }`}
+          >
+            {STEP_LABEL[item.step]}
+            {item.overdueDays > 0 ? ` · ${item.overdueDays}d late` : ""}
+          </span>
+          <span className="text-slate-500">{PRODUCT_LABEL[p.product]}</span>
+        </div>
+      </div>
+
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={hasTamil ? 12 : 7}
+        className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm leading-relaxed text-slate-100"
+      />
+      <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+        <span className={tooLong ? "text-rose-300" : ""}>
+          {body.length} characters
+          {tooLong && ". Instagram stops at 1,000: send English and Tamil as two messages."}
+        </span>
+        {overLimit && (
+          <span className="text-rose-300">Over today's {CHANNEL_LABEL[item.channel]} limit</span>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => copy(body, "all")}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5"
+        >
+          {copied === "all" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} Copy
+        </button>
+        {hasTamil && (
+          <>
+            <button
+              onClick={() => copy(parts[0].trim(), "en")}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs hover:bg-white/5"
+            >
+              {copied === "en" ? "Copied" : "Copy English"}
+            </button>
+            <button
+              onClick={() => copy(parts[1].trim(), "ta")}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs hover:bg-white/5"
+            >
+              {copied === "ta" ? "Copied" : "Copy Tamil"}
+            </button>
+          </>
+        )}
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-sm hover:bg-white/5"
+          >
+            {item.channel === "instagram" ? (
+              <Instagram className="h-4 w-4" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+            {DM_OPEN_LABEL[item.channel]}
+          </a>
+        )}
+        <button
+          onClick={onSkip}
+          className="ml-auto rounded-lg px-3 py-2 text-xs text-slate-400 hover:bg-white/5"
+        >
+          Skip
+        </button>
+        <button
+          disabled={busy}
+          onClick={() =>
+            act(
+              () =>
+                recordDmFn({
+                  data: {
+                    prospectId: p.id,
+                    channel: item.channel,
+                    step: item.step,
+                    body,
+                  },
+                }),
+              "Marked as sent",
+            )
+          }
+          className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-amber-950 hover:bg-amber-400 disabled:opacity-50"
+        >
+          <Check className="h-4 w-4" /> Mark sent
+        </button>
+      </div>
+
+      {item.step > 1 && (
+        <div className="mt-3 flex items-center gap-2 border-t border-white/5 pt-3 text-xs text-slate-400">
+          Already heard back?
+          <button
+            disabled={busy}
+            onClick={() =>
+              act(
+                () => patchFn({ data: { id: p.id, patch: { status: "replied" } } }),
+                "Moved to Replied",
+              )
+            }
+            className="rounded-lg border border-white/10 px-2.5 py-1 hover:bg-white/5"
+          >
+            They replied
+          </button>
+          <button
+            disabled={busy}
+            onClick={() =>
+              act(
+                () => patchFn({ data: { id: p.id, patch: { status: "lost" } } }),
+                "Closed as lost",
+              )
+            }
+            className="rounded-lg border border-white/10 px-2.5 py-1 hover:bg-white/5"
+          >
+            Not interested
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -701,9 +1061,9 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         </div>
         <p className="mb-3 text-sm text-slate-400">
           CSV with a header row. Columns: business_name, website_url, city, industry, contact_email,
-          contact_name, contact_phone, linkedin_url, source_type, score. Each row needs a business
-          name and at least one way to reach them. Duplicates and opted-out emails are skipped.
-          Drafts are generated for every new row; nothing is sent.
+          contact_name, contact_phone, linkedin_url, instagram (handle or link), source_type, score.
+          Each row needs a business name and at least one way to reach them. Duplicates and
+          opted-out emails are skipped. Drafts are generated for every new row; nothing is sent.
         </p>
         <input
           type="file"
@@ -800,7 +1160,9 @@ function ProspectDrawer({
         ? mailtoLink(prospect.contact_email, edit.subject, edit.body)
         : channel === "whatsapp"
           ? whatsappLink(prospect.contact_phone, edit.body)
-          : prospect.linkedin_url
+          : channel === "instagram"
+            ? instagramLink(prospect.instagram_handle)
+            : prospect.linkedin_url
       : null;
 
   const dnc = prospect.status === "do_not_contact";
@@ -924,7 +1286,7 @@ function ProspectDrawer({
         ) : (
           <>
             <div className="mt-6 flex items-center gap-2">
-              {(["email", "linkedin", "whatsapp"] as OutreachChannel[]).map((c) => (
+              {(["email", "whatsapp", "instagram", "linkedin"] as OutreachChannel[]).map((c) => (
                 <button
                   key={c}
                   onClick={() => setChannel(c)}
@@ -1060,9 +1422,20 @@ function ProspectDrawer({
                                   subject: channel === "email" ? edit.subject : null,
                                 },
                               });
-                              await sentFn({ data: draft.id });
+                              if (channel === "email") await sentFn({ data: draft.id });
+                              else
+                                await recordDmFn({
+                                  data: {
+                                    prospectId: prospect.id,
+                                    channel,
+                                    step: draft.step,
+                                    body: edit.body,
+                                  },
+                                });
                             },
-                            "Marked as sent. Follow-up scheduled.",
+                            channel === "email"
+                              ? "Marked as sent. Follow-up scheduled."
+                              : "Marked as sent. It returns to the DM queue when the follow-up is due.",
                           )
                         }
                         disabled={busy !== null}
@@ -1087,7 +1460,9 @@ function ProspectDrawer({
                   <p className="text-xs text-slate-500">
                     {channel === "whatsapp"
                       ? "Add a phone number above to get an open-in-WhatsApp link."
-                      : "Add a LinkedIn URL above to open the profile."}
+                      : channel === "instagram"
+                        ? "Add an Instagram handle above to open the profile."
+                        : "Add a LinkedIn URL above to open the profile."}
                   </p>
                 )}
               </div>
@@ -1159,6 +1534,7 @@ function ContactFields({
     contact_email: prospect.contact_email ?? "",
     contact_phone: prospect.contact_phone ?? "",
     linkedin_url: prospect.linkedin_url ?? "",
+    instagram_handle: prospect.instagram_handle ?? "",
     seenzo_score: prospect.seenzo_score?.toString() ?? "",
   });
   const dirty =
@@ -1166,6 +1542,7 @@ function ContactFields({
     v.contact_email !== (prospect.contact_email ?? "") ||
     v.contact_phone !== (prospect.contact_phone ?? "") ||
     v.linkedin_url !== (prospect.linkedin_url ?? "") ||
+    v.instagram_handle !== (prospect.instagram_handle ?? "") ||
     v.seenzo_score !== (prospect.seenzo_score?.toString() ?? "");
 
   const field = (key: keyof typeof v, label: string) => (
@@ -1185,6 +1562,7 @@ function ContactFields({
       {field("contact_email", "Email")}
       {field("contact_phone", "Phone / WhatsApp")}
       {field("linkedin_url", "LinkedIn URL")}
+      {field("instagram_handle", "Instagram handle or link")}
       {field("seenzo_score", "Seenzo score (0-100)")}
       <div className="flex items-end">
         <button
@@ -1196,6 +1574,7 @@ function ContactFields({
               contact_email: v.contact_email,
               contact_phone: v.contact_phone,
               linkedin_url: v.linkedin_url,
+              instagram_handle: v.instagram_handle,
               seenzo_score: s === "" ? null : Number.parseInt(s, 10),
             });
           }}
