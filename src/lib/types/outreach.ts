@@ -86,7 +86,18 @@ export interface OutreachMetrics {
   followupsDue: number;
 }
 
+/** Inbound mail from prospects that the tool is tracking (from the outreach_inbound table). */
+export interface OutreachInboundSummary {
+  total: number;
+  replies: number;
+  optOuts: number;
+  bounces: number;
+  autoReplies: number;
+  lastReceivedAt: string | null;
+}
+
 export interface OutreachDashboard {
+  inbound: OutreachInboundSummary;
   prospects: OutreachProspect[];
   messages: OutreachMessage[];
   metrics: OutreachMetrics;

@@ -556,6 +556,27 @@ function OutreachPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-5 py-8">
+        <section className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm">
+          <div>
+            <span className="text-2xl font-bold text-amber-200">{data.inbound.replies}</span>
+            <span className="ml-2 text-slate-300">
+              {data.inbound.replies === 1 ? "reply received" : "replies received"}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+            <span>{data.inbound.optOuts} opted out</span>
+            <span>{data.inbound.bounces} bounced</span>
+            <span>{data.inbound.autoReplies} auto-replies</span>
+            <span>
+              {data.inbound.total} inbound tracked
+              {data.inbound.lastReceivedAt ? ` · last ${relTime(data.inbound.lastReceivedAt)}` : ""}
+            </span>
+          </div>
+          <span className="ml-auto text-xs text-slate-500">
+            Email replies are caught automatically. For DMs, tap "They replied" in the queue.
+          </span>
+        </section>
+
         <section className="mb-6 flex flex-wrap items-center gap-2">
           {tabs.map((t) => (
             <button

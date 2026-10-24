@@ -6,6 +6,7 @@ import { getSupabaseServer } from "@/lib/supabase";
 import type {
   ImportResult,
   OutreachChannel,
+  OutreachInboundSummary,
   OutreachDashboard,
   OutreachMessage,
   OutreachProduct,
@@ -100,7 +101,7 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
   const { email } = await requireAdmin();
   const supabase = db();
 
-  const [prospectsRes, messagesRes] = await Promise.all([
+  const [prospectsRes, messagesRes, inboundRes] = await Promise.all([
     supabase
       .from("outreach_prospects")
       .select("*")
@@ -111,10 +112,28 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
       .select("*")
       .order("created_at", { ascending: true })
       .limit(5000),
+    supabase
+      .from("outreach_inbound")
+      .select("kind, received_at")
+      .order("received_at", { ascending: false })
+      .limit(5000),
   ]);
   if (prospectsRes.error)
     throw new Error(`Failed to load prospects: ${prospectsRes.error.message}`);
   if (messagesRes.error) throw new Error(`Failed to load messages: ${messagesRes.error.message}`);
+  // Counts are best-effort: a problem here should never stop the page from loading.
+  const inboundRows = (inboundRes.error ? [] : (inboundRes.data ?? [])) as {
+    kind: "reply" | "opt_out" | "bounce" | "auto_reply";
+    received_at: string;
+  }[];
+  const inbound: OutreachInboundSummary = {
+    total: inboundRows.length,
+    replies: inboundRows.filter((r) => r.kind === "reply").length,
+    optOuts: inboundRows.filter((r) => r.kind === "opt_out").length,
+    bounces: inboundRows.filter((r) => r.kind === "bounce").length,
+    autoReplies: inboundRows.filter((r) => r.kind === "auto_reply").length,
+    lastReceivedAt: inboundRows[0]?.received_at ?? null,
+  };
 
   const prospects = (prospectsRes.data ?? []) as OutreachProspect[];
   const messages = (messagesRes.data ?? []) as OutreachMessage[];
@@ -122,6 +141,7 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
   const enabled = hostingerConfigured();
 
   return {
+    inbound,
     prospects,
     messages,
     adminEmail: email,
