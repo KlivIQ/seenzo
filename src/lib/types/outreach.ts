@@ -1,13 +1,19 @@
 // Types for the internal outreach tool. Kept out of database.ts so the generated/hand-synced
 // Seenzo schema types stay untouched; server code uses a loosely typed client for these tables.
 
-export type OutreachProduct = "seenzo" | "tryon" | "connect" | "consulting";
+export type OutreachProduct = "seenzo" | "tryon" | "connect" | "consulting" | "webredo";
 export type OutreachChannel = "email" | "linkedin" | "whatsapp" | "instagram";
 export type OutreachStatus =
   "new" | "drafted" | "sent" | "replied" | "booked" | "won" | "lost" | "do_not_contact";
 export type OutreachMessageStatus = "draft" | "sending" | "sent" | "skipped";
 
-export const OUTREACH_PRODUCTS: OutreachProduct[] = ["seenzo", "tryon", "connect", "consulting"];
+export const OUTREACH_PRODUCTS: OutreachProduct[] = [
+  "seenzo",
+  "tryon",
+  "connect",
+  "consulting",
+  "webredo",
+];
 export const OUTREACH_CHANNELS: OutreachChannel[] = ["email", "linkedin", "whatsapp", "instagram"];
 export const OUTREACH_STATUSES: OutreachStatus[] = [
   "new",
@@ -19,6 +25,25 @@ export const OUTREACH_STATUSES: OutreachStatus[] = [
   "lost",
   "do_not_contact",
 ];
+
+export type AuditVerdict = "target" | "maybe" | "skip";
+
+export interface AuditFindings {
+  checkedUrl: string;
+  /** Set when the site could not be loaded. */
+  error?: string;
+  seenzo?: { score: number; grade: string; categories: Record<string, number> };
+  design: { id: string; label: string; points: number }[];
+  conversion: { id: string; label: string; points: number }[];
+  seo: { id: string; label: string }[];
+  platform: string | null;
+  copyrightYear: number | null;
+  fetchMs: number | null;
+  isSpa: boolean;
+  /** The few findings worth quoting in a message, strongest first. */
+  topProblems: string[];
+  parts?: { seoGap: number; design: number; conversion: number };
+}
 
 export interface OutreachProspect {
   id: string;
@@ -33,6 +58,11 @@ export interface OutreachProspect {
   contact_phone: string | null;
   linkedin_url: string | null;
   instagram_handle: string | null;
+  audit_score: number | null;
+  redo_score: number | null;
+  audit_verdict: AuditVerdict | null;
+  audit_findings: AuditFindings | null;
+  audited_at: string | null;
   source: string;
   product: OutreachProduct;
   seenzo_score: number | null;
@@ -74,6 +104,8 @@ export interface ProspectImportRow {
   contact_phone?: string;
   linkedin_url?: string;
   instagram_handle?: string;
+  /** Street address (e.g. from a Google Maps export); used to guess the city. */
+  address?: string;
   source_type?: string;
   score?: string;
 }

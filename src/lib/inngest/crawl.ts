@@ -13,11 +13,18 @@ interface RawFetch {
   ms: number;
 }
 
-async function fetchText(url: string): Promise<RawFetch | null> {
+export interface CrawlOptions {
+  /** Per-request timeout. Default 8000. */
+  timeoutMs?: number;
+  /** Internal pages to crawl besides the homepage. Default 5. */
+  maxPages?: number;
+}
+
+async function fetchText(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<RawFetch | null> {
   const start = Date.now();
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
       headers: { "user-agent": USER_AGENT },
     });
     const body = await res.text();
@@ -60,13 +67,18 @@ function sameOriginInternalLinks(
  * additional internal pages (preferring sitemap URLs, falling back to
  * homepage links). Native `fetch` only — edge-safe, no Node APIs.
  */
-export async function fetchPages(requestedUrl: string): Promise<CrawlData> {
+export async function fetchPages(
+  requestedUrl: string,
+  opts: CrawlOptions = {},
+): Promise<CrawlData> {
+  const timeoutMs = opts.timeoutMs ?? FETCH_TIMEOUT_MS;
+  const maxPages = opts.maxPages ?? MAX_INTERNAL_PAGES;
   const origin = new URL(requestedUrl).origin;
 
   const [homepageResult, robotsResult, sitemapResult] = await Promise.all([
-    fetchText(requestedUrl),
-    fetchText(`${origin}/robots.txt`),
-    fetchText(`${origin}/sitemap.xml`),
+    fetchText(requestedUrl, timeoutMs),
+    fetchText(`${origin}/robots.txt`, timeoutMs),
+    fetchText(`${origin}/sitemap.xml`, timeoutMs),
   ]);
 
   if (!homepageResult) {
@@ -91,7 +103,7 @@ export async function fetchPages(requestedUrl: string): Promise<CrawlData> {
   const candidateUrls: string[] = [];
   if (sitemap && sitemap.status === 200) {
     for (const loc of extractSitemapUrls(sitemap.body)) {
-      if (candidateUrls.length >= MAX_INTERNAL_PAGES) break;
+      if (candidateUrls.length >= maxPages) break;
       try {
         const resolved = new URL(loc, origin);
         if (resolved.origin === origin && resolved.toString() !== requestedUrl) {
@@ -102,16 +114,16 @@ export async function fetchPages(requestedUrl: string): Promise<CrawlData> {
       }
     }
   }
-  if (candidateUrls.length < MAX_INTERNAL_PAGES) {
+  if (candidateUrls.length < maxPages) {
     for (const url of sameOriginInternalLinks(homepage.html, requestedUrl, origin, requestedUrl)) {
-      if (candidateUrls.length >= MAX_INTERNAL_PAGES) break;
+      if (candidateUrls.length >= maxPages) break;
       if (!candidateUrls.includes(url)) candidateUrls.push(url);
     }
   }
 
   const fetchedPages = await Promise.all(
-    candidateUrls.slice(0, MAX_INTERNAL_PAGES).map(async (url): Promise<FetchedPage | null> => {
-      const result = await fetchText(url);
+    candidateUrls.slice(0, maxPages).map(async (url): Promise<FetchedPage | null> => {
+      const result = await fetchText(url, timeoutMs);
       if (!result) return null;
       return {
         url,

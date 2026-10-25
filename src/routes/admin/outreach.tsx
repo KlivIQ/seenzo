@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import {
   Check,
   Copy,
   ExternalLink,
+  Globe,
   Inbox,
   Instagram,
   Loader2,
@@ -32,6 +33,7 @@ import {
   deleteProspect,
   importProspects,
   loadOutreach,
+  auditProspect,
   markMessageSent,
   recordDmSent,
   checkRepliesNow,
@@ -43,6 +45,7 @@ import {
   type ProspectPatch,
 } from "@/lib/server/outreach";
 import type {
+  AuditVerdict,
   ImportResult,
   OutreachChannel,
   OutreachMessage,
@@ -98,6 +101,10 @@ const sentFn = createServerFn({ method: "POST" })
     await markMessageSent(id);
     return { success: true } as const;
   });
+
+const auditFn = createServerFn({ method: "POST" })
+  .validator((id: string) => id)
+  .handler(async ({ data: id }) => auditProspect(id));
 
 const recordDmFn = createServerFn({ method: "POST" })
   .validator(
@@ -162,6 +169,7 @@ const PRODUCT_LABEL: Record<OutreachProduct, string> = {
   tryon: "TryOn",
   connect: "Connect",
   consulting: "Consulting",
+  webredo: "Website & AI",
 };
 
 const CHANNEL_LABEL: Record<OutreachChannel, string> = {
@@ -222,6 +230,10 @@ function parseCsv(text: string): ProspectImportRow[] {
   const header = rows[0].map((h) => h.trim().toLowerCase());
   const alias: Record<string, keyof ProspectImportRow> = {
     business_name: "business_name",
+    title: "business_name",
+    category: "industry",
+    address: "address",
+    emails: "contact_email",
     business: "business_name",
     company: "business_name",
     website_url: "website_url",
@@ -269,6 +281,7 @@ interface SendTarget {
 function nextEmailDraft(p: OutreachProspect, messages: OutreachMessage[]): OutreachMessage | null {
   if (["do_not_contact", "replied", "booked", "won", "lost"].includes(p.status)) return null;
   if (!p.contact_email) return null;
+  if (p.audit_verdict === "skip") return null;
   const drafts = messages.filter(
     (m) => m.prospect_id === p.id && m.channel === "email" && m.status === "draft",
   );
@@ -399,7 +412,7 @@ function ConfirmSendDialog({
 
 // ---------- page ----------
 
-type Filter = "all" | "to_send" | "dm" | "due" | "sent" | "replied" | "closed";
+type Filter = "all" | "to_send" | "dm" | "due" | "sent" | "replied" | "closed" | "skipped";
 
 function OutreachPage() {
   const data = Route.useLoaderData();
@@ -412,12 +425,61 @@ function OutreachPage() {
   const [sendTarget, setSendTarget] = useState<SendTarget | null>(null);
   const [regenAll, setRegenAll] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [auditProgress, setAuditProgress] = useState<{ done: number; total: number } | null>(null);
+  const [auditingIds, setAuditingIds] = useState<Set<string>>(new Set());
+  const stopAudit = useRef(false);
 
   const refresh = () => router.invalidate();
 
+  /** Audits sites two at a time, one per request, so each stays well inside the time limit. */
+  async function runAudit(targets: OutreachProspect[]) {
+    if (targets.length === 0 || auditProgress) return;
+    stopAudit.current = false;
+    let next = 0;
+    let done = 0;
+    const counts = { target: 0, maybe: 0, skip: 0, failed: 0 };
+    setAuditProgress({ done: 0, total: targets.length });
+    const worker = async () => {
+      while (!stopAudit.current) {
+        const p = targets[next++];
+        if (!p) return;
+        setAuditingIds((prev) => new Set(prev).add(p.id));
+        try {
+          const r = await auditFn({ data: p.id });
+          if (r.error) counts.failed += 1;
+          else counts[r.verdict] += 1;
+        } catch {
+          counts.failed += 1;
+        }
+        setAuditingIds((prev) => {
+          const n = new Set(prev);
+          n.delete(p.id);
+          return n;
+        });
+        done += 1;
+        setAuditProgress({ done, total: targets.length });
+        if (done % 5 === 0) refresh();
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    setAuditProgress(null);
+    refresh();
+    toast.success(
+      `Audited ${done}: ${counts.target} to target, ${counts.maybe} maybe, ${counts.skip} skipped` +
+        (counts.failed ? `, ${counts.failed} did not load` : ""),
+    );
+  }
+
+  const unaudited = data.prospects.filter(
+    (p) =>
+      p.website_url &&
+      !p.audited_at &&
+      !["do_not_contact", "lost", "won", "replied", "booked"].includes(p.status),
+  );
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return data.prospects.filter((p) => {
+    const rows = data.prospects.filter((p) => {
       if (product !== "all" && p.product !== product) return false;
       if (q) {
         const hay =
@@ -426,7 +488,9 @@ function OutreachPage() {
       }
       switch (filter) {
         case "to_send":
-          return p.status === "new" || p.status === "drafted";
+          return (p.status === "new" || p.status === "drafted") && p.audit_verdict !== "skip";
+        case "skipped":
+          return p.audit_verdict === "skip";
         case "due":
           return isDue(p);
         case "sent":
@@ -439,6 +503,11 @@ function OutreachPage() {
           return true;
       }
     });
+    // Best prospects first once their sites have been audited.
+    if (filter === "to_send") {
+      rows.sort((a, b) => (b.redo_score ?? -1) - (a.redo_score ?? -1));
+    }
+    return rows;
   }, [data.prospects, filter, query, product]);
 
   const selected = data.prospects.find((p) => p.id === selectedId) ?? null;
@@ -465,6 +534,11 @@ function OutreachPage() {
     { key: "due", label: "Follow-up due", count: m.followupsDue },
     { key: "sent", label: "Sent", count: m.sent },
     { key: "replied", label: "Replied", count: m.replied },
+    {
+      key: "skipped",
+      label: "Skipped (modern site)",
+      count: data.prospects.filter((p) => p.audit_verdict === "skip").length,
+    },
     { key: "closed", label: "Closed" },
     { key: "all", label: "All", count: m.total },
   ];
@@ -514,6 +588,24 @@ function OutreachPage() {
                   <Inbox className="h-4 w-4" />
                 )}
                 Check replies
+              </button>
+            )}
+            {auditProgress ? (
+              <button
+                onClick={() => (stopAudit.current = true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Auditing {auditProgress.done}/{auditProgress.total} · Stop
+              </button>
+            ) : (
+              <button
+                onClick={() => void runAudit(unaudited)}
+                disabled={unaudited.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/5 disabled:opacity-40"
+              >
+                <Globe className="h-4 w-4" />
+                Audit websites{unaudited.length ? ` (${unaudited.length})` : ""}
               </button>
             )}
             <button
@@ -631,6 +723,7 @@ function OutreachPage() {
                 <tr>
                   <th className="px-4 py-3">Business</th>
                   <th className="px-4 py-3">Product</th>
+                  <th className="px-4 py-3">Website</th>
                   <th className="px-4 py-3">Contact</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Last touch</th>
@@ -640,7 +733,7 @@ function OutreachPage() {
               <tbody>
                 {visible.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                    <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
                       Nothing here. Import prospects or change the filter.
                     </td>
                   </tr>
@@ -658,6 +751,13 @@ function OutreachPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-300">{PRODUCT_LABEL[p.product]}</td>
+                    <td className="px-4 py-3">
+                      <SiteCell
+                        p={p}
+                        auditing={auditingIds.has(p.id)}
+                        onAudit={() => void runAudit([p])}
+                      />
+                    </td>
                     <td className="px-4 py-3 text-xs text-slate-400">
                       {[
                         p.contact_email,
@@ -735,6 +835,209 @@ function OutreachPage() {
         />
       )}
       {showImport && <ImportDialog onClose={() => setShowImport(false)} onDone={refresh} />}
+    </div>
+  );
+}
+
+// ---------- website audit ----------
+
+const VERDICT_STYLE: Record<AuditVerdict, string> = {
+  target: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+  maybe: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+  skip: "border-slate-500/40 bg-slate-500/10 text-slate-400",
+};
+const VERDICT_LABEL: Record<AuditVerdict, string> = {
+  target: "Target",
+  maybe: "Maybe",
+  skip: "Skip",
+};
+
+function SiteCell({
+  p,
+  auditing,
+  onAudit,
+}: {
+  p: OutreachProspect;
+  auditing: boolean;
+  onAudit: () => void;
+}) {
+  if (!p.website_url) {
+    return <span className="text-xs text-amber-300">No website</span>;
+  }
+  if (auditing) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking
+      </span>
+    );
+  }
+  if (!p.audited_at || !p.audit_verdict) {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAudit();
+        }}
+        className="rounded-lg border border-white/10 px-2 py-1 text-xs text-slate-300 hover:bg-white/5"
+      >
+        Audit
+      </button>
+    );
+  }
+  const f = p.audit_findings;
+  if (f?.error) {
+    return <span className="text-xs text-slate-400">Did not load</span>;
+  }
+  return (
+    <div className="max-w-[14rem]">
+      <div className="flex items-center gap-2">
+        <span className="text-base font-semibold text-slate-100">{p.redo_score}</span>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-xs ${VERDICT_STYLE[p.audit_verdict]}`}
+        >
+          {VERDICT_LABEL[p.audit_verdict]}
+        </span>
+      </div>
+      {f?.topProblems[0] && (
+        <div className="mt-1 truncate text-xs text-slate-500" title={f.topProblems[0]}>
+          {f.topProblems[0]}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AuditPanel({
+  prospect,
+  busy,
+  onAudit,
+  onVerdict,
+}: {
+  prospect: OutreachProspect;
+  busy: boolean;
+  onAudit: () => void;
+  onVerdict: (v: AuditVerdict) => void;
+}) {
+  const f = prospect.audit_findings;
+  if (!prospect.website_url) {
+    return (
+      <div className="mt-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+        No website listed. A business with no website at all can be pitched a new one.
+      </div>
+    );
+  }
+  if (!prospect.audited_at || !f || !prospect.audit_verdict) {
+    return (
+      <div className="mt-6 flex items-center justify-between rounded-lg border border-white/10 p-3 text-sm">
+        <span className="text-slate-400">Website not audited yet.</span>
+        <button
+          onClick={onAudit}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-semibold text-amber-950 hover:bg-amber-400 disabled:opacity-50"
+        >
+          <Globe className="h-4 w-4" /> Audit website
+        </button>
+      </div>
+    );
+  }
+  const groups: { title: string; items: string[] }[] = [
+    { title: "Looks dated", items: f.design.map((x) => x.label) },
+    { title: "Hard to find (Google and AI search)", items: f.seo.map((x) => x.label) },
+    { title: "Hard to reach", items: f.conversion.map((x) => x.label) },
+  ].filter((g) => g.items.length > 0);
+
+  return (
+    <div className="mt-6 rounded-lg border border-white/10 p-4">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="text-2xl font-bold text-slate-100">{prospect.redo_score ?? "-"}</span>
+        <span className="text-xs text-slate-400">/100 needs a redo</span>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-xs ${VERDICT_STYLE[prospect.audit_verdict]}`}
+        >
+          {VERDICT_LABEL[prospect.audit_verdict]}
+        </span>
+        <button
+          onClick={onAudit}
+          disabled={busy}
+          className="ml-auto rounded-lg border border-white/10 px-2.5 py-1 text-xs hover:bg-white/5 disabled:opacity-50"
+        >
+          Re-audit
+        </button>
+      </div>
+
+      {f.error ? (
+        <p className="text-sm text-slate-300">
+          {f.error}. It may be down for now, so try again later. A site that stays down is itself a
+          reason to get in touch.
+        </p>
+      ) : (
+        <>
+          <div className="mb-3 grid grid-cols-3 gap-2 text-center text-xs text-slate-400">
+            <div className="rounded-lg bg-white/[0.03] p-2">
+              <div className="text-base font-semibold text-slate-100">{f.seenzo?.score ?? "-"}</div>
+              Seenzo score
+            </div>
+            <div className="rounded-lg bg-white/[0.03] p-2">
+              <div className="text-base font-semibold text-slate-100">{f.parts?.design ?? "-"}</div>
+              Dated look
+            </div>
+            <div className="rounded-lg bg-white/[0.03] p-2">
+              <div className="text-base font-semibold text-slate-100">
+                {f.parts?.conversion ?? "-"}
+              </div>
+              Missed enquiries
+            </div>
+          </div>
+          {groups.length === 0 ? (
+            <p className="text-sm text-slate-400">Nothing major found. Safe to skip.</p>
+          ) : (
+            <div className="space-y-3">
+              {groups.map((g) => (
+                <div key={g.title}>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {g.title}
+                  </div>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-slate-300">
+                    {g.items.map((i) => (
+                      <li key={i}>{i}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-xs text-slate-500">
+            {[
+              f.platform && `Built on ${f.platform}`,
+              f.copyrightYear && `footer © ${f.copyrightYear}`,
+              f.fetchMs != null && `${(f.fetchMs / 1000).toFixed(1)}s to load`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        </>
+      )}
+
+      <div className="mt-3 flex items-center gap-2 border-t border-white/5 pt-3 text-xs text-slate-400">
+        {prospect.audit_verdict === "skip" ? (
+          <button
+            onClick={() => onVerdict("maybe")}
+            disabled={busy}
+            className="rounded-lg border border-white/10 px-2.5 py-1 hover:bg-white/5"
+          >
+            Contact anyway
+          </button>
+        ) : (
+          <button
+            onClick={() => onVerdict("skip")}
+            disabled={busy}
+            className="rounded-lg border border-white/10 px-2.5 py-1 hover:bg-white/5"
+          >
+            Skip this one
+          </button>
+        )}
+        <span>Messages quote one finding and never say how to fix it.</span>
+      </div>
     </div>
   );
 }
@@ -1297,6 +1600,17 @@ function ProspectDrawer({
           prospect={prospect}
           onSave={(patch) =>
             run("contact", () => patchFn({ data: { id: prospect.id, patch } }), "Saved")
+          }
+        />
+
+        <AuditPanel
+          prospect={prospect}
+          busy={busy !== null}
+          onAudit={() => run("audit", () => auditFn({ data: prospect.id }), "Website audited")}
+          onVerdict={(v) =>
+            run("verdict", () =>
+              patchFn({ data: { id: prospect.id, patch: { audit_verdict: v } } }),
+            )
           }
         />
 

@@ -89,7 +89,7 @@ export function buildDmQueue(
   const firsts: QueueItem[] = [];
 
   for (const p of prospects) {
-    if (ENDED.has(p.status)) continue;
+    if (ENDED.has(p.status) || p.audit_verdict === "skip") continue;
     const dms = byProspect.get(p.id) ?? [];
     const sent = dms.filter((m) => m.status === "sent");
 
