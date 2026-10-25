@@ -565,6 +565,14 @@ function OutreachPage() {
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="/outreach-guide.html"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/5"
+            >
+              Guide
+            </a>
             {data.sending.enabled && (
               <button
                 onClick={async () => {
