@@ -2,9 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildDrafts, pickProduct } from "@/lib/outreach-templates";
 import { channelRoute, normalizeInstagram } from "@/lib/outreach-dm";
+import { cityFromAddress } from "@/lib/south-india";
+import { auditSite } from "./site-audit";
 import { getSupabaseServer } from "@/lib/supabase";
 import type {
   ImportResult,
+  AuditVerdict,
   OutreachChannel,
   OutreachInboundSummary,
   OutreachDashboard,
@@ -168,6 +171,16 @@ export async function loadOutreach(): Promise<OutreachDashboard> {
 
 // ---------- Draft generation ----------
 
+/** Audit findings for the Website and AI pitch. Nothing is quoted if the audit failed. */
+function auditContext(p: OutreachProspect): { problems?: string[]; problemCount?: number } {
+  const f = p.audit_findings;
+  if (!f || f.error) return {};
+  return {
+    problems: f.topProblems,
+    problemCount: f.design.length + f.seo.length + f.conversion.length,
+  };
+}
+
 async function writeDrafts(
   prospect: OutreachProspect,
   step: 1 | 2 | 3,
@@ -191,6 +204,7 @@ async function writeDrafts(
       websiteUrl: prospect.website_url,
       contactEmail: prospect.contact_email,
       seenzoScore: prospect.seenzo_score,
+      ...auditContext(prospect),
     },
     step,
     wanted,
@@ -335,7 +349,14 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
   const toInsert: Record<string, unknown>[] = [];
   for (const row of rows) {
     const business = clean(row.business_name);
-    const email = clean(row.contact_email)?.toLowerCase() ?? null;
+    // Google Maps exports can hold several emails in one cell: use the first valid one.
+    const email =
+      (row.contact_email ?? "")
+        .split(/[,;\s]+/)
+        .map((e) => e.trim().toLowerCase())
+        .find((e) => EMAIL_RE.test(e)) ??
+      clean(row.contact_email)?.toLowerCase() ??
+      null;
     const host = hostOf(row.website_url);
     const phone = clean(row.contact_phone);
     const linkedin = clean(row.linkedin_url);
@@ -370,7 +391,7 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
       business_name: business,
       website_url: clean(row.website_url),
       website_host: host,
-      city: clean(row.city),
+      city: clean(row.city) ?? cityFromAddress(row.address),
       industry: clean(row.industry),
       contact_name: clean(row.contact_name),
       contact_email: email,
@@ -408,6 +429,59 @@ export async function importProspects(rows: ProspectImportRow[]): Promise<Import
   return result;
 }
 
+// ---------- Website audit ----------
+
+export interface AuditResultSummary {
+  verdict: AuditVerdict;
+  redo: number;
+  seenzoScore: number | null;
+  error?: string;
+}
+
+/** Audits one prospect's website and saves the verdict. One site per call keeps it within time limits. */
+export async function auditProspect(prospectId: string): Promise<AuditResultSummary> {
+  await requireAdmin();
+  const prospect = await getProspect(prospectId);
+  if (!prospect.website_url) throw new Error("This prospect has no website to audit");
+
+  const outcome = await auditSite(prospect.website_url);
+  const { error } = await db()
+    .from("outreach_prospects")
+    .update({
+      audit_score: outcome.seenzoScore,
+      redo_score: outcome.findings.error ? null : outcome.redo,
+      audit_verdict: outcome.verdict,
+      audit_findings: outcome.findings,
+      audited_at: new Date().toISOString(),
+    })
+    .eq("id", prospectId);
+  if (error) throw new Error(`Failed to save audit: ${error.message}`);
+
+  // Website and AI messages quote the audit, so refresh the first-touch drafts once it is in.
+  if (
+    prospect.product === "webredo" &&
+    !outcome.findings.error &&
+    prospect.followup_step === 0 &&
+    (prospect.status === "new" || prospect.status === "drafted")
+  ) {
+    await writeDrafts(
+      {
+        ...prospect,
+        audit_score: outcome.seenzoScore,
+        audit_verdict: outcome.verdict,
+        audit_findings: outcome.findings,
+      },
+      1,
+    );
+  }
+  return {
+    verdict: outcome.verdict,
+    redo: outcome.redo,
+    seenzoScore: outcome.seenzoScore,
+    error: outcome.findings.error,
+  };
+}
+
 // ---------- Updates ----------
 
 export interface ProspectPatch {
@@ -419,6 +493,8 @@ export interface ProspectPatch {
   linkedin_url?: string;
   instagram_handle?: string;
   seenzo_score?: number | null;
+  /** Lets Sri contact a prospect the audit skipped, or skip one it did not. */
+  audit_verdict?: AuditVerdict;
 }
 
 export async function updateProspect(prospectId: string, patch: ProspectPatch): Promise<void> {
@@ -431,6 +507,12 @@ export async function updateProspect(prospectId: string, patch: ProspectPatch): 
     if (patch.status !== "sent") update.next_followup_at = null;
   }
   if (patch.notes !== undefined) update.notes = patch.notes;
+  if (patch.audit_verdict !== undefined) {
+    if (!["target", "maybe", "skip"].includes(patch.audit_verdict)) {
+      throw new Error("Invalid verdict");
+    }
+    update.audit_verdict = patch.audit_verdict;
+  }
   if (patch.contact_name !== undefined) update.contact_name = clean(patch.contact_name);
   if (patch.contact_phone !== undefined) update.contact_phone = clean(patch.contact_phone);
   if (patch.linkedin_url !== undefined) update.linkedin_url = clean(patch.linkedin_url);

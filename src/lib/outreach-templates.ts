@@ -14,6 +14,10 @@ export interface DraftContext {
   websiteUrl?: string | null;
   contactEmail?: string | null;
   seenzoScore?: number | null;
+  /** Website-audit findings (strongest first), used by the Website and AI pitch. */
+  problems?: string[];
+  /** How many problems the audit found in total. */
+  problemCount?: number;
 }
 
 export interface Draft {
@@ -30,12 +34,19 @@ const TRYON_RE = /saree|sari|ethnic|textile|boutique|fashion|apparel|silk|handlo
 const CONNECT_RE =
   /clinic|salon|spa|dental|dentist|hospital|gym|fitness|restaurant|cafe|coaching|academy|school/i;
 
+// Schools, coaching, training, architects, civil engineers and real estate: old websites are the
+// norm here, so they get the Website and AI pitch (checked before Connect, which also matches
+// "school", "academy" and "coaching").
+const WEBREDO_RE =
+  /coaching|tutorial|training|academy|institute|school|college|architect|civil|engineer|construction|contractor|builder|developer|promoter|real estate|realty|properties|interior/i;
+
 export function pickProduct(
   industry?: string | null,
   businessName?: string | null,
 ): OutreachProduct {
   const text = `${industry ?? ""} ${businessName ?? ""}`;
   if (TRYON_RE.test(text)) return "tryon";
+  if (WEBREDO_RE.test(text)) return "webredo";
   if (CONNECT_RE.test(text)) return "connect";
   return "seenzo";
 }
@@ -151,10 +162,27 @@ interface Pitch {
 interface Copy {
   hi: string;
   pitch: Pitch;
-  fix: string | null; // Seenzo only: KlivIQ can fix what the report finds
+  fix: string | null; // Seenzo: KlivIQ can fix what the report finds. Website and AI: who we are
+  fixFirst?: boolean; // put `fix` before the ask (Website and AI)
   remind: string; // step 2
   stop: string; // step 3
   optOut: string;
+}
+
+function lowerFirst(text: string): string {
+  // Keep acronyms ("AI search...") and symbols as they are.
+  return /^[A-Z][A-Z]/.test(text) || !/^[A-Z]/.test(text)
+    ? text
+    : text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+const EDU_RE = /coaching|tutorial|training|academy|institute|school|college|class/i;
+
+/** Who the prospect's customers are, in words that fit their trade. */
+function audience(ctx: DraftContext): { en: string; ta: string } {
+  return EDU_RE.test(`${ctx.industry ?? ""} ${ctx.businessName}`)
+    ? { en: "parents and students", ta: "பெற்றோரும் மாணவர்களும்" }
+    : { en: "customers", ta: "வாடிக்கையாளர்கள்" };
 }
 
 function englishCopy(product: OutreachProduct, ctx: DraftContext): Copy {
@@ -163,6 +191,7 @@ function englishCopy(product: OutreachProduct, ctx: DraftContext): Copy {
   const city = cityName(ctx);
   const trade = ctx.industry?.trim().toLowerCase();
   let pitch: Pitch;
+  let about: string | null = null; // Website and AI pitch: who we are and what we do
 
   if (product === "seenzo") {
     const site = websiteVerified(ctx.contactEmail, ctx.websiteUrl)
@@ -188,6 +217,27 @@ function englishCopy(product: OutreachProduct, ctx: DraftContext): Copy {
       hook: `Many businesses${city ? ` in ${city}` : ""} miss customer enquiries on WhatsApp. Messages come at night or when you are busy, and no one replies in time. We have made KlivIQ Connect. It replies to common questions, takes bookings and passes the chat to you when needed. It works in English, Tamil and Hindi, on the official WhatsApp Business system.`,
       ask: "Can I show you a short demo on your own number?",
     };
+  } else if (product === "webredo") {
+    const aud = audience(ctx).en;
+    const site = websiteVerified(ctx.contactEmail, ctx.websiteUrl)
+      ? host(ctx.websiteUrl)
+      : "your website";
+    const found = ctx.problems ?? [];
+    const total = ctx.problemCount ?? found.length;
+    // Name the problem and one example so they know we really looked. Never say how to fix it.
+    const lookedAt =
+      found.length > 0
+        ? `I had a look at ${site}. One thing I noticed: ${lowerFirst(found[0])}.${
+            total > 1 ? ` There are ${total - 1} more things like this.` : ""
+          } Small things like these quietly make ${aud} choose someone else, on Google and on AI search like ChatGPT.`
+        : `Many websites lose ${aud} on Google and on AI search like ChatGPT because of small problems that nobody points out.`;
+    pitch = {
+      hook: `I know how frustrating this can be. You are doing good work and you have a website, but the calls and enquiries are not coming from it, or from Google. And nobody tells you why.\n\n${lookedAt}`,
+      ask: `If you like, I can show you ${
+        found.length > 0 ? "what I found" : "what may be holding it back"
+      }, and how ${biz}'s website can look, in a 10 minute call. No obligation. Do let me know a time that suits you.`,
+    };
+    about = `We are KlivIQ, a small team in Chennai. We rebuild old websites into fast, mobile-friendly ones that show up on Google and AI search. We also add WhatsApp enquiry and an AI assistant, so ${aud} can reach you easily.`;
   } else {
     pitch = {
       hook: "KlivIQ is a small team in Chennai. We help Indian businesses use AI in simple, useful ways: websites, WhatsApp automation and getting found on AI search. You do not need a big team or a big budget.",
@@ -198,14 +248,17 @@ function englishCopy(product: OutreachProduct, ctx: DraftContext): Copy {
   return {
     hi: name ? `Hi ${name},` : "Hi,",
     pitch,
+    fixFirst: product === "webredo",
     fix:
       product === "seenzo"
         ? "If there are problems, our team at KlivIQ (kliviq.com) can fix them for you. Then AI search can find your business and suggest it more easily. Just reply to this email."
-        : null,
+        : about,
     remind:
       product === "seenzo"
         ? "Just a reminder about my last email. I can still check your website with Seenzo and send you the report. There is no cost. If it finds problems, our team at KlivIQ (kliviq.com) can fix them, so AI search can find your business more easily."
-        : `Just a reminder about my last email about ${biz}. ${pitch.ask}`,
+        : product === "webredo"
+          ? "Just a gentle reminder about my last mail. I am sure you are busy. I am happy to show you what I found, and how your website can look, in a 10 minute call. No obligation."
+          : `Just a reminder about my last email about ${biz}. ${pitch.ask}`,
     stop: "I will stop writing now, so I do not fill your inbox. If you need help with this later, just reply to this email or message us on WhatsApp.",
     optOut: "If you are not interested, just tell me. I will not write again.",
   };
@@ -217,6 +270,7 @@ function tamilCopy(product: OutreachProduct, ctx: DraftContext): Copy | null {
   const name = firstName(ctx.contactName);
   const biz = niceName(ctx.businessName);
   let pitch: Pitch;
+  let about: string | null = null;
 
   if (product === "seenzo") {
     const site = websiteVerified(ctx.contactEmail, ctx.websiteUrl)
@@ -246,6 +300,20 @@ function tamilCopy(product: OutreachProduct, ctx: DraftContext): Copy | null {
       hook: `${where} பல நிறுவனங்களுக்கு WhatsApp வழியாக வரும் வாடிக்கையாளர் விசாரணைகள் தவறிப் போகின்றன. இரவிலோ நீங்கள் வேலையாக இருக்கும் நேரத்திலோ செய்திகள் வரும்போது, உடனே யாரும் பதில் அனுப்புவதில்லை. இதற்காக KlivIQ Connect என்ற சேவையை உருவாக்கியுள்ளோம். இது பொதுவான கேள்விகளுக்குப் பதில் சொல்லும், முன்பதிவுகளை எடுக்கும், தேவைப்படும்போது உரையாடலை உங்களிடம் ஒப்படைக்கும். தமிழ், ஆங்கிலம், இந்தி ஆகிய மொழிகளில், அதிகாரப்பூர்வ WhatsApp Business முறையில் இது இயங்குகிறது.`,
       ask: "உங்கள் சொந்த எண்ணிலேயே ஒரு சிறிய டெமோ காட்டட்டுமா?",
     };
+  } else if (product === "webredo") {
+    const aud = audience(ctx).ta;
+    const total = ctx.problemCount ?? ctx.problems?.length ?? 0;
+    const looked =
+      total > 0
+        ? `${biz} இணையதளத்தைப் பார்த்தேன். Google-லும் ChatGPT போன்ற AI தேடல்களிலும், ${aud} வேறு நிறுவனத்தைத் தேர்ந்தெடுக்கக் காரணமாகும் ${total} விஷயங்களைக் கவனித்தேன்.`
+        : `பல இணையதளங்கள், யாரும் சுட்டிக்காட்டாத சிறிய குறைகளால், Google-லும் ChatGPT போன்ற AI தேடல்களிலும் ${aud} இழக்கின்றன.`;
+    pitch = {
+      hook: `உங்கள் நிறுவனம் நன்றாகச் செயல்பட்டும், இணையதளம் இருந்தும், அதன் மூலமாகவோ Google மூலமாகவோ அழைப்புகளும் விசாரணைகளும் வருவதில்லை என்றால் எவ்வளவு வருத்தமாக இருக்கும் என்பது எனக்குப் புரிகிறது. அதற்கான காரணத்தை யாரும் சொல்வதில்லை.\n\n${looked}`,
+      ask: `${
+        total > 0 ? "நான் கண்டதையும்" : "உங்கள் இணையதளத்தைத் தடுக்கும் காரணங்களையும்"
+      }, உங்கள் இணையதளம் எப்படி இருக்கலாம் என்பதையும் 10 நிமிட அழைப்பில் காட்டுகிறேன். எந்தக் கடமையும் இல்லை. உங்களுக்கு வசதியான நேரத்தைத் தெரிவியுங்கள்.`,
+    };
+    about = `நாங்கள் சென்னையில் உள்ள KlivIQ என்ற சிறிய குழு. பழைய இணையதளங்களை வேகமான, மொபைலுக்கு ஏற்ற புதிய இணையதளங்களாக மாற்றுகிறோம். அவை Google-லும் AI தேடல்களிலும் தெரியும். மேலும் WhatsApp விசாரணை வசதியையும் AI உதவியாளரையும் சேர்க்கிறோம். இதனால் ${aud} எளிதாகத் தொடர்பு கொள்ளலாம்.`;
   } else {
     pitch = {
       hook: "KlivIQ சென்னையில் உள்ள ஒரு சிறிய குழு. இணையதளம், WhatsApp தானியங்கி சேவை, AI தேடல்களில் கண்டுபிடிக்கப்படுவது போன்றவற்றில், இந்திய நிறுவனங்கள் AI தொழில்நுட்பத்தை எளிமையாகவும் பயனுள்ள வகையிலும் பயன்படுத்த உதவுகிறோம். பெரிய குழுவோ பெரிய பட்ஜெட்டோ தேவையில்லை.",
@@ -256,14 +324,17 @@ function tamilCopy(product: OutreachProduct, ctx: DraftContext): Copy | null {
   return {
     hi: name ? `வணக்கம் ${name},` : "வணக்கம்,",
     pitch,
+    fixFirst: product === "webredo",
     fix:
       product === "seenzo"
         ? "ஏதேனும் குறைகள் இருந்தால், எங்கள் KlivIQ (kliviq.com) குழு அவற்றைச் சரி செய்து தரும். அதன் பிறகு AI தேடல்கள் உங்கள் நிறுவனத்தை எளிதாகக் கண்டுபிடித்துப் பரிந்துரைக்கும். இந்த மின்னஞ்சலுக்குப் பதில் அனுப்பினால் போதும்."
-        : null,
+        : about,
     remind:
       product === "seenzo"
         ? "முன்பு அனுப்பிய மின்னஞ்சல் பற்றி நினைவூட்ட எழுதுகிறேன். உங்கள் இணையதளத்தை Seenzo மூலம் சரிபார்த்து அறிக்கை அனுப்ப இப்போதும் தயாராக இருக்கிறேன். இதற்குக் கட்டணம் இல்லை. குறைகள் இருந்தால், எங்கள் KlivIQ (kliviq.com) குழு அவற்றைச் சரி செய்து தரும். அதன் பிறகு AI தேடல்கள் உங்கள் நிறுவனத்தை எளிதாகக் கண்டுபிடிக்கும்."
-        : `${biz} பற்றி முன்பு அனுப்பிய மின்னஞ்சல் பற்றி நினைவூட்ட எழுதுகிறேன். ${pitch.ask}`,
+        : product === "webredo"
+          ? "முன்பு அனுப்பிய மின்னஞ்சல் பற்றி ஒரு சிறிய நினைவூட்டல். நீங்கள் வேலையாக இருப்பீர்கள் என்பது புரிகிறது. நான் கண்டதையும், உங்கள் இணையதளம் எப்படி இருக்கலாம் என்பதையும் 10 நிமிட அழைப்பில் காட்டத் தயாராக இருக்கிறேன். எந்தக் கடமையும் இல்லை."
+          : `${biz} பற்றி முன்பு அனுப்பிய மின்னஞ்சல் பற்றி நினைவூட்ட எழுதுகிறேன். ${pitch.ask}`,
     stop: "உங்கள் இன்பாக்ஸை நிரப்ப வேண்டாம் என்பதால் இத்துடன் நிறுத்திக்கொள்கிறேன். பின்னர் இதில் உதவி தேவைப்பட்டால், இந்த மின்னஞ்சலுக்குப் பதில் அனுப்புங்கள் அல்லது WhatsApp மூலம் தொடர்பு கொள்ளுங்கள்.",
     optOut: "உங்களுக்கு இதில் விருப்பம் இல்லையென்றால், சொல்லுங்கள். மீண்டும் எழுத மாட்டேன்.",
   };
@@ -339,7 +410,20 @@ function tryonSubject(biz: string): string {
   return TRYON_SUBJECTS[h % TRYON_SUBJECTS.length](biz);
 }
 
+const WEBREDO_SUBJECTS: ((biz: string) => string)[] = [
+  (b) => `${b} website`,
+  (b) => `a note about ${possessive(b)} website`,
+  (b) => `enquiries from ${possessive(b)} website`,
+];
+
+function pickBySeed(list: ((biz: string) => string)[], biz: string): string {
+  let h = 0;
+  for (const ch of biz) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return list[h % list.length](biz);
+}
+
 const SUBJECTS: Record<OutreachProduct, (ctx: DraftContext) => string> = {
+  webredo: (c) => pickBySeed(WEBREDO_SUBJECTS, niceName(c.businessName)),
   seenzo: (c) => `quick question for ${niceName(c.businessName)}`,
   tryon: (c) => tryonSubject(niceName(c.businessName)),
   connect: (c) => `whatsapp enquiries at ${niceName(c.businessName)}`,
@@ -350,7 +434,10 @@ const SUBJECTS: Record<OutreachProduct, (ctx: DraftContext) => string> = {
 
 function emailBlock(c: Copy, step: 1 | 2 | 3): string {
   if (step === 1) {
-    return [c.hi, c.pitch.hook, c.pitch.ask, c.fix, c.optOut].filter(Boolean).join("\n\n");
+    const body = c.fixFirst
+      ? [c.hi, c.pitch.hook, c.fix, c.pitch.ask, c.optOut]
+      : [c.hi, c.pitch.hook, c.pitch.ask, c.fix, c.optOut];
+    return body.filter(Boolean).join("\n\n");
   }
   if (step === 2) return [c.hi, c.remind, c.optOut].join("\n\n");
   return [c.hi, c.stop].join("\n\n");
@@ -361,12 +448,13 @@ export type DmChannel = "instagram" | "whatsapp" | "linkedin";
 /** Splits an English + Tamil message so each language can be sent on its own. */
 export const TAMIL_MARKER = "தமிழில்:";
 
-function tamilDmBlock(ta: Copy, step: 1 | 2 | 3): string {
+function tamilDmBlock(ta: Copy, step: 1 | 2 | 3, product: OutreachProduct): string {
   if (step === 1) {
     return [
       ta.hi,
       "சென்னையில் உள்ள KlivIQ-இல் இருந்து ஸ்ரீராம் எழுதுகிறேன்.",
       ta.pitch.hook,
+      ...(ta.fix && product === "webredo" ? [ta.fix] : []),
       ta.pitch.ask,
       ta.optOut,
     ].join("\n\n");
@@ -403,7 +491,8 @@ export function buildDmBody(
         channel === "whatsapp"
           ? "If you are not interested, reply STOP. I will not message again."
           : "If you are not interested, just tell me. I will not message again.";
-      english = `${en.hi} ${intro}\n\n${en.pitch.hook}\n\n${en.pitch.ask}\n\n${stop}`;
+      const about = product === "webredo" && en.fix ? `${en.fix}\n\n` : "";
+      english = `${en.hi} ${intro}\n\n${en.pitch.hook}\n\n${about}${en.pitch.ask}\n\n${stop}`;
     }
   } else if (step === 2) {
     english = `${en.hi} just a gentle reminder about my message. ${en.pitch.ask}`;
@@ -411,7 +500,7 @@ export function buildDmBody(
     english = `${en.hi} I will stop messaging now so I do not disturb you. If you need help with this later, you can message me here anytime.`;
   }
 
-  return ta ? `${english}\n\n${TAMIL_MARKER}\n\n${tamilDmBlock(ta, step)}` : english;
+  return ta ? `${english}\n\n${TAMIL_MARKER}\n\n${tamilDmBlock(ta, step, product)}` : english;
 }
 
 /** step 1 = first touch, 2 = short reminder (about day 4), 3 = last note (about day 10). */
