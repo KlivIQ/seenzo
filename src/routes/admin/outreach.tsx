@@ -29,6 +29,8 @@ import {
 } from "@/lib/outreach-templates";
 import { buildDmQueue, DM_DAILY_LIMIT, sentToday, type QueueItem } from "@/lib/outreach-dm";
 import { getAdminSession } from "@/lib/server/auth";
+import { searchPlaces, type PlacesSearchResult } from "@/lib/server/places";
+import { PLACES_CITIES, PLACES_SEGMENTS } from "@/lib/places-queries";
 import {
   deleteProspect,
   importProspects,
@@ -69,6 +71,10 @@ const getData = createServerFn({ method: "GET" }).handler(async () => loadOutrea
 const importFn = createServerFn({ method: "POST" })
   .validator((rows: ProspectImportRow[]) => rows)
   .handler(async ({ data }) => importProspects(data));
+
+const placesFn = createServerFn({ method: "POST" })
+  .validator((input: { query: string; city: string; industry: string }) => input)
+  .handler(async ({ data }) => searchPlaces(data));
 
 const patchFn = createServerFn({ method: "POST" })
   .validator((input: { id: string; patch: ProspectPatch }) => input)
@@ -1351,6 +1357,39 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [mode, setMode] = useState<"csv" | "places">("places");
+  const [segment, setSegment] = useState(0);
+  const [city, setCity] = useState<string>(PLACES_CITIES[0]);
+  const [found, setFound] = useState<PlacesSearchResult | null>(null);
+
+  async function searchGoogle() {
+    setBusy(true);
+    setFound(null);
+    setResult(null);
+    try {
+      const seg = PLACES_SEGMENTS[segment];
+      setFound(await placesFn({ data: { query: seg.query, city, industry: seg.label } }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Search failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function importFound() {
+    if (!found || found.rows.length === 0) return;
+    setBusy(true);
+    try {
+      const res = await importFn({ data: found.rows });
+      setResult(res);
+      setFound(null);
+      onDone();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onFile(file: File | undefined) {
     if (file) setText(await file.text());
@@ -1383,43 +1422,137 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
             <X className="h-5 w-5 text-slate-400" />
           </button>
         </div>
-        <p className="mb-3 text-sm text-slate-400">
-          CSV with a header row. Columns: business_name, website_url, city, industry, contact_email,
-          contact_name, contact_phone, linkedin_url, instagram (handle or link), source_type, score.
-          Each row needs a business name and at least one way to reach them. Duplicates and
-          opted-out emails are skipped. Drafts are generated for every new row; nothing is sent.
-        </p>
-        <input
-          type="file"
-          accept=".csv,text/csv"
-          onChange={(e) => onFile(e.target.files?.[0])}
-          className="mb-3 block text-sm"
-        />
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={8}
-          placeholder="…or paste CSV here"
-          className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 font-mono text-xs"
-        />
-        {result && (
-          <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
-            Added {result.added}. Skipped: {result.skippedDuplicate} duplicate,{" "}
-            {result.skippedOptedOut} opted out, {result.skippedInvalid} invalid.
+        <div className="mb-4 flex gap-2 text-sm">
+          {(["places", "csv"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`rounded-lg px-3 py-1.5 ${mode === m ? "bg-amber-500 font-semibold text-amber-950" : "border border-white/10 text-slate-300"}`}
+            >
+              {m === "places" ? "Google Places" : "CSV"}
+            </button>
+          ))}
+        </div>
+        {mode === "places" && (
+          <div>
+            <p className="mb-3 text-sm text-slate-400">
+              Pulls up to 60 businesses per search from Google, with website and phone. Duplicates
+              are skipped on import. Then use Audit websites to rank them.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={segment}
+                onChange={(e) => setSegment(Number(e.target.value))}
+                className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+              >
+                {PLACES_SEGMENTS.map((s, i) => (
+                  <option key={s.label} value={i}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-sm"
+              >
+                {PLACES_CITIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={searchGoogle}
+                disabled={busy}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50"
+              >
+                {busy && !found && <Loader2 className="h-4 w-4 animate-spin" />} Search
+              </button>
+            </div>
+            {found && (
+              <div className="mt-3 rounded-lg border border-white/10 p-3 text-sm text-slate-300">
+                Found {found.rows.length} usable of {found.fetched} (skipped {found.closed} closed,{" "}
+                {found.noContact} with no website or phone).
+                <ul className="mt-2 max-h-40 overflow-auto text-xs text-slate-400">
+                  {found.rows.slice(0, 12).map((r) => (
+                    <li key={r.business_name + r.address} className="truncate">
+                      {r.business_name} · {r.website_url ? "site" : "no site"} ·{" "}
+                      {r.contact_phone ?? "no phone"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {result && (
+              <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                Added {result.added}. Skipped: {result.skippedDuplicate} duplicate,{" "}
+                {result.skippedOptedOut} opted out, {result.skippedInvalid} invalid.
+              </div>
+            )}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={onClose}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm"
+              >
+                {result ? "Done" : "Cancel"}
+              </button>
+              <button
+                onClick={importFound}
+                disabled={busy || !found || found.rows.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950 disabled:opacity-50"
+              >
+                {busy && found && <Loader2 className="h-4 w-4 animate-spin" />} Import{" "}
+                {found ? found.rows.length : ""}
+              </button>
+            </div>
           </div>
         )}
-        <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg border border-white/10 px-4 py-2 text-sm">
-            {result ? "Done" : "Cancel"}
-          </button>
-          <button
-            onClick={run}
-            disabled={busy || !text.trim()}
-            className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950 disabled:opacity-50"
-          >
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Import
-          </button>
-        </div>
+        {mode === "csv" && (
+          <>
+            <p className="mb-3 text-sm text-slate-400">
+              CSV with a header row. Columns: business_name, website_url, city, industry,
+              contact_email, contact_name, contact_phone, linkedin_url, instagram (handle or link),
+              source_type, score. Each row needs a business name and at least one way to reach them.
+              Duplicates and opted-out emails are skipped. Drafts are generated for every new row;
+              nothing is sent.
+            </p>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => onFile(e.target.files?.[0])}
+              className="mb-3 block text-sm"
+            />
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={8}
+              placeholder="…or paste CSV here"
+              className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 font-mono text-xs"
+            />
+            {result && (
+              <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                Added {result.added}. Skipped: {result.skippedDuplicate} duplicate,{" "}
+                {result.skippedOptedOut} opted out, {result.skippedInvalid} invalid.
+              </div>
+            )}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={onClose}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm"
+              >
+                {result ? "Done" : "Cancel"}
+              </button>
+              <button
+                onClick={run}
+                disabled={busy || !text.trim()}
+                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-amber-950 disabled:opacity-50"
+              >
+                {busy && <Loader2 className="h-4 w-4 animate-spin" />} Import
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
