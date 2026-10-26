@@ -462,12 +462,16 @@ export async function auditProspect(prospectId: string): Promise<AuditResultSumm
   if (!prospect.website_url) throw new Error("This prospect has no website to audit");
 
   const outcome = await auditSite(prospect.website_url);
+  // "Skip" means the site is already modern, which only matters when we sell a website redo.
+  // TryOn, Seenzo and Connect pitches do not depend on how the website looks.
+  const verdict: AuditVerdict =
+    prospect.product !== "webredo" && outcome.verdict === "skip" ? "maybe" : outcome.verdict;
   const { error } = await db()
     .from("outreach_prospects")
     .update({
       audit_score: outcome.seenzoScore,
       redo_score: outcome.findings.error ? null : outcome.redo,
-      audit_verdict: outcome.verdict,
+      audit_verdict: verdict,
       audit_findings: outcome.findings,
       audited_at: new Date().toISOString(),
     })
@@ -485,14 +489,14 @@ export async function auditProspect(prospectId: string): Promise<AuditResultSumm
       {
         ...prospect,
         audit_score: outcome.seenzoScore,
-        audit_verdict: outcome.verdict,
+        audit_verdict: verdict,
         audit_findings: outcome.findings,
       },
       1,
     );
   }
   return {
-    verdict: outcome.verdict,
+    verdict,
     redo: outcome.redo,
     seenzoScore: outcome.seenzoScore,
     error: outcome.findings.error,

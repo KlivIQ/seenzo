@@ -478,6 +478,7 @@ function OutreachPage() {
 
   const unaudited = data.prospects.filter(
     (p) =>
+      p.product === "webredo" &&
       p.website_url &&
       !p.audited_at &&
       !["do_not_contact", "lost", "won", "replied", "booked"].includes(p.status),
