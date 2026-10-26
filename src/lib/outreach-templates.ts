@@ -389,43 +389,24 @@ export function niceName(name: string): string {
     .join("");
 }
 
-// Subjects read like a normal work email: short, lowercase, the business name only (never a
-// website we have not verified), no hype words, no "AI", no question-mark hooks, no scores.
-// TryOn rotates between a few plain, specific subjects (same business always gets the same one, so
-// follow-ups stay in the same thread). Identical subjects on every email look like bulk mail.
-const TRYON_SUBJECTS: ((biz: string) => string)[] = [
-  (b) => `saree try-on for ${b}`,
-  (b) => `question about ${possessive(b)} online store`,
-  (b) => `${b} customers trying sarees on`,
-];
+// Subjects are short, plain questions an owner can answer in their head, with the business name
+// spelled the way they write it. No hype words, no emojis, no capitals, no scores.
 
 /** "Dakshinam Sarees" -> "Dakshinam Sarees'", "Matkatus" -> "Matkatus'", "Ayana" -> "Ayana's". */
 function possessive(name: string): string {
   return /s$/i.test(name) ? `${name}'` : `${name}'s`;
 }
 
-function tryonSubject(biz: string): string {
-  let h = 0;
-  for (const ch of biz) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TRYON_SUBJECTS[h % TRYON_SUBJECTS.length](biz);
-}
-
-const WEBREDO_SUBJECTS: ((biz: string) => string)[] = [
-  (b) => `${b} website`,
-  (b) => `a note about ${possessive(b)} website`,
-  (b) => `enquiries from ${possessive(b)} website`,
-];
-
-function pickBySeed(list: ((biz: string) => string)[], biz: string): string {
-  let h = 0;
-  for (const ch of biz) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return list[h % list.length](biz);
-}
-
 const SUBJECTS: Record<OutreachProduct, (ctx: DraftContext) => string> = {
-  webredo: (c) => pickBySeed(WEBREDO_SUBJECTS, niceName(c.businessName)),
-  seenzo: (c) => `quick question for ${niceName(c.businessName)}`,
-  tryon: (c) => tryonSubject(niceName(c.businessName)),
+  webredo: (c) => `is ${possessive(niceName(c.businessName))} website getting you any calls?`,
+  seenzo: (c) => `${niceName(c.businessName)} on ChatGPT: did you check?`,
+  tryon: (c) => {
+    const b = niceName(c.businessName);
+    // "Dakshinam Sarees sarees" reads wrong, so skip the second "sarees" when the name has it.
+    return /sarees?\b/i.test(b)
+      ? `can your customers try ${b} before buying?`
+      : `can your customers try ${b} sarees before buying?`;
+  },
   connect: (c) => `whatsapp enquiries at ${niceName(c.businessName)}`,
   consulting: (c) => `idea for ${niceName(c.businessName)}`,
 };

@@ -210,6 +210,23 @@ async function writeDrafts(
     wanted,
   );
 
+  // Follow-ups keep the subject of the email already sent, so the thread never splits.
+  if (step > 1) {
+    const { data: sentEmail } = await supabase
+      .from("outreach_messages")
+      .select("subject")
+      .eq("prospect_id", prospect.id)
+      .eq("channel", "email")
+      .eq("status", "sent")
+      .order("step", { ascending: false })
+      .limit(1);
+    const sentSubject = (sentEmail?.[0] as { subject: string | null } | undefined)?.subject;
+    if (sentSubject) {
+      const base = sentSubject.replace(/^re:\s*/i, "");
+      for (const d of drafts) if (d.channel === "email") d.subject = base;
+    }
+  }
+
   // Replace any unsent drafts for this step (on these channels) so regenerating never duplicates.
   const { error: delError } = await supabase
     .from("outreach_messages")
